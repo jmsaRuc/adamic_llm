@@ -1,0 +1,57 @@
+services:
+  api: &main_app
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    image: adamic_llm:${ADAMIC_LLM_VERSION:-latest}
+    restart: always
+    env_file:
+      - path: .env
+        required: false
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      ADAMIC_LLM_HOST: 0.0.0.0
+      ADAMIC_LLM_DB_HOST: adamic_llm-db
+      ADAMIC_LLM_DB_PORT: 5432
+      ADAMIC_LLM_DB_USER: adamic_llm
+      ADAMIC_LLM_DB_PASS: adamic_llm
+      ADAMIC_LLM_DB_BASE: adamic_llm
+      ADAMIC_LLM_REDIS_HOST: adamic_llm-redis
+
+  db:
+    image: postgres:18.1-bookworm
+    hostname: adamic_llm-db
+    environment:
+      POSTGRES_PASSWORD: "adamic_llm"
+      POSTGRES_USER: "adamic_llm"
+      POSTGRES_DB: "adamic_llm"
+    volumes:
+      - adamic_llm-db-data:/var/lib/postgresql
+    restart: always
+    healthcheck:
+      test: pg_isready -U adamic_llm
+      interval: 2s
+      timeout: 3s
+      retries: 40
+
+  redis:
+    image: redis:8.4.0
+    hostname: "adamic_llm-redis"
+    restart: always
+    environment:
+      ALLOW_EMPTY_PASSWORD: "yes"
+    healthcheck:
+      test: redis-cli ping
+      interval: 1s
+      timeout: 3s
+      retries: 50
+
+
+
+volumes:
+  adamic_llm-db-data:
+    name: adamic_llm-db-data
