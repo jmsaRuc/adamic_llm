@@ -76,6 +76,18 @@ class Settings(BaseSettings):
     # multiproc_dir. It's required for [uvi|guni]corn projects.
     prometheus_dir: Path = TEMP_DIR / "prom"
 
+    # graph varibels
+    llm_provider: str = "groq"
+
+    # Groq
+    groq_llm: str = "openai/gpt-oss-120b"
+    groq_api_key: str | None = None
+    groq_api_base: str = "https://api.groq.com/"
+
+    # google
+    google_project_id: str | None = None
+    google_application_credentials: str | None = None
+
     @property
     def db_url(self) -> URL:
         """

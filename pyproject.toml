@@ -26,6 +26,10 @@ dependencies = [
   "langchain-core>=1.2.26",
   "langfuse>=4.0.6",
   "langchain-openai>=1.1.12",
+  "langchain-groq>=1.1.2",
+  "langchain-ollama>=1.1.0",
+  "pycountry>=26.2.16",
+  "google-cloud-translate>=3.25.0",
 ]
 
 [dependency-groups]
