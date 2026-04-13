@@ -111,7 +111,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-langgraph.env
+*.env
 .env
 .venv
 env/

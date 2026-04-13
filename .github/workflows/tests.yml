@@ -20,7 +20,7 @@ jobs:
       - name: Install the project
         run: uv sync --locked --group testing-lint
       - name: Run lint check
-        run: uv run pre-commit run -a ${{ matrix.cmd }}
+        run: uv run pre-commit run --all-files
   pytest:
     runs-on: ubuntu-latest
     steps:
