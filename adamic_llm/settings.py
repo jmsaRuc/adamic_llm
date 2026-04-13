@@ -88,6 +88,9 @@ class Settings(BaseSettings):
     google_project_id: str | None = None
     google_application_credentials: str | None = None
 
+    # bypass
+    bypass: bool = False
+
     @property
     def db_url(self) -> URL:
         """
@@ -127,6 +130,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_prefix="ADAMIC_LLM_",
         env_file_encoding="utf-8",
+        extra="ignore",
     )
 
     ENABLE_LANGFUSE: bool = False

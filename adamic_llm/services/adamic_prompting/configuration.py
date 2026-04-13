@@ -68,6 +68,11 @@ class Configuration(BaseModel):
         title="Google Application Credentials",
         description="Path to Google application credentials JSON file",
     )
+    bypass: bool = Field(
+        default=False,
+        title="Bypass Adamic Prompting",
+        description="Weather to Bypass Adamic Promting and just get base model output",
+    )
 
     @classmethod
     def from_runnable_config(

@@ -20,7 +20,7 @@ def convert_to_lc_messages(
 
     lc_messages: list[BaseMessage] = []
     for m in messages:
-        if m.role == "system":
+        if m.role in {"system", "developer"}:
             lc_messages.append(SystemMessage(content=m.content or ""))
         elif m.role == "user":
             lc_messages.append(HumanMessage(content=m.content or ""))

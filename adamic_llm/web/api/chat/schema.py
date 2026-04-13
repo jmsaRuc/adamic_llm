@@ -87,12 +87,12 @@ class ChatCompletionRequest(BaseModel):
 
     model: str
     messages: list[ChatCompletionRequestMessage]
-    temperature: float | None = 0.7
+    temperature: float | None = 0.0
     top_p: float | None = 1.0
     n: int | None = 1
     stream: bool | None = False
     stop: str | list[str] | None = None
-    max_tokens: int | None = None
+    max_tokens: int | None = 8192
     presence_penalty: float | None = 0.0
     frequency_penalty: float | None = 0.0
     logit_bias: dict[str, float] | None = None

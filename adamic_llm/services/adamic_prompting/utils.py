@@ -1,7 +1,12 @@
-from gettext import translation
+import logging
 from typing import Any
 
 import pycountry
+from langchain_core.messages import HumanMessage, SystemMessage
+
+from adamic_llm.services.adamic_prompting.state import SummaryState
+
+log = logging.getLogger("adamic_prompting.graph")
 
 
 async def get_config_value(value: Any) -> str:
@@ -93,7 +98,49 @@ async def get_native_name(contry_code: str) -> str:
     Returns:
         str: The native name of the language corresponding to the provided country code.
     """
-    translator = translation("iso639-3", pycountry.LOCALES_DIR, languages=[contry_code])
-    language = pycountry.languages.get(alpha_2=contry_code)
 
-    return translator.gettext(language.name) if language else contry_code
+    language = pycountry.languages.get(alpha_2=contry_code)
+    if language is None:
+        log.warning(
+            f"Language with country code '{contry_code}'"
+            " not found. Returning country code as fallback."
+        )
+        return contry_code
+
+    return language.name
+
+
+async def get_latest_human_message(state: SummaryState) -> HumanMessage | None:
+    """
+    Retrieve the latest human message from the state.
+
+    Returns:
+        HumanMessage | None: The latest human message
+            in the conversation, or None if no human messages.
+    """
+    message = state["messages"][-1] if state["messages"] else None
+
+    if message is None:
+        return None
+    if message.type != "human":
+        return None
+
+    return message
+
+
+async def get_latest_system_message(state: SummaryState) -> SystemMessage | None:
+    """
+    Retrieve the latest system message from the state.
+
+    Returns:
+        SystemMessage | None: The latest system message
+            in the conversation, or None if no system messages.
+    """
+    message = state["messages"][-2] if len(state["messages"]) >= 2 else None
+
+    if message is None:
+        return None
+    if message.type != "system":
+        return None
+
+    return message

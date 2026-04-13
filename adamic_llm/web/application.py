@@ -38,6 +38,17 @@ def get_app() -> FastAPI:
             "groq_api_base": settings.groq_api_base,
             "google_project_id": settings.google_project_id,
             "google_application_credentials": settings.google_application_credentials,
+            "bypass": False,
+        }
+    )
+    adamic_graph_with_config_bypass = adamic_graph.with_config(
+        configurable={
+            "llm_provider": settings.llm_provider,
+            "groq_llm": settings.groq_llm,
+            "groq_api_base": settings.groq_api_base,
+            "google_project_id": settings.google_project_id,
+            "google_application_credentials": settings.google_application_credentials,
+            "bypass": True,
         }
     )
 
@@ -47,8 +58,12 @@ def get_app() -> FastAPI:
     graph_registry = GraphRegistry(
         registry={
             "adamic_graph": GraphConfig(
-                graph=adamic_graph_with_config, streamable_node_names=[]
-            )
+                graph=adamic_graph_with_config, streamable_node_names=["adamic_output"]
+            ),
+            "adamic_graph_basic": GraphConfig(
+                graph=adamic_graph_with_config_bypass,
+                streamable_node_names=["adamic_bypass"],
+            ),
         }
     )
 
