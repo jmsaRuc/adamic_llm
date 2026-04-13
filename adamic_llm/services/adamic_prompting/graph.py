@@ -32,6 +32,21 @@ log = logging.getLogger("adamic_prompting.graph")
 
 
 # Nodes
+async def main_router(
+    state: SummaryState, config: RunnableConfig
+) -> Literal["detect_language", "adamic_bypass"]:
+    """Main router to determine the flow based on the detected language."""
+
+    configurable = Configuration.from_runnable_config(config)
+
+    mode = configurable.mode
+
+    if mode == "direct":
+        log.info("Routing to adamic bypass node since mode is set to direct")
+        return "adamic_bypass"
+    return "detect_language"
+
+
 async def detect_language(
     state: SummaryState, config: RunnableConfig
 ) -> dict[str, str | HumanMessage]:
@@ -98,7 +113,7 @@ async def detect_language(
 
 
 async def route_to_translation(
-    state: SummaryState, config: RunnableConfig
+    state: SummaryState,
 ) -> Literal["translate_question", "adamic_bypass"]:
     """
     Routes the flow based on the detected language.
@@ -108,14 +123,10 @@ async def route_to_translation(
     Returns:
         Literal["translate_question", "adamic_bypass"]: The next node to route to.
     """
-    configurable = Configuration.from_runnable_config(config)
 
     detect_language_code = state["detected_language_code"]
     detect_language_name = state["detected_language_name"]
 
-    if configurable.bypass:
-        log.info(f"Routing to bypass node since bypass = {configurable.bypass}")
-        return "adamic_bypass"
     if detect_language_code != "en":
         log.info(
             "Routing to translation node since"

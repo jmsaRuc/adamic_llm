@@ -16,8 +16,13 @@ class SearchAPI(Enum):
 
 
 class Configuration(BaseModel):
-    """The configurable fields for the research assistant."""
+    """The configurable fields for adamic-llm."""
 
+    mode: Literal["direct", "native", "basic-translation", "adamic"] = Field(
+        default="adamic",
+        title="Mode of Operation",
+        description="Mode of operation for the research assistant",
+    )
     local_llm: str = Field(
         default="deepseek-r1:1.5b-qwen-distill-q8_0",
         title="LLM Model Name",
@@ -67,11 +72,6 @@ class Configuration(BaseModel):
         default="/home/jens/.config/gcloud/application_default_credentials.json",
         title="Google Application Credentials",
         description="Path to Google application credentials JSON file",
-    )
-    bypass: bool = Field(
-        default=False,
-        title="Bypass Adamic Prompting",
-        description="Weather to Bypass Adamic Promting and just get base model output",
     )
 
     @classmethod

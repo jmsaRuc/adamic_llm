@@ -81,6 +81,8 @@ target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+!notebooks/.keep
+notebooks/*.ipynb
 
 # IPython
 profile_default/
@@ -145,3 +147,11 @@ cython_debug/
 
 #ruff 
 .ruff_cache
+
+# Langgraph
+.langgraph_api
+
+
+#Benchmarks
+benchmarks/results
+benchmarks/results/

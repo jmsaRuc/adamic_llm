@@ -1,0 +1,11 @@
+{
+    "dockerfile_lines": [],
+    "graphs": {
+      "adamic_prompting": "./adamic_llm/services/adamic_prompting/graph.py:graph"
+    },
+    "python_version": "3.13",
+    "env": "./langgraph.env",
+    "dependencies": [
+      "."
+    ]
+  }

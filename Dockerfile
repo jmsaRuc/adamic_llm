@@ -21,13 +21,13 @@ RUN --mount=from=uv,source=/usr/local/bin/uv,target=/bin/uv \
     --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv sync --locked --no-install-project --no-dev
+    uv sync --locked --no-install-project --no-group dev-full
 
 COPY . .
 
 RUN --mount=from=uv,source=/usr/local/bin/uv,target=/bin/uv \
     --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-dev
+    uv sync --locked --no-group dev-full 
 
 CMD ["/usr/local/bin/python", "-m", "adamic_llm"]
 
@@ -39,4 +39,4 @@ FROM prod AS dev
 
 RUN --mount=from=uv,source=/usr/local/bin/uv,target=/bin/uv \
     --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --all-groups
+    uv sync --locked --group testing-lint
