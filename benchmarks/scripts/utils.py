@@ -10,6 +10,10 @@ from tenacity import (
 from groq import Groq
 import requests
 from openai import OpenAI
+from dotenv import load_dotenv
+
+load_dotenv("benchmark.env")
+
 
 client = OpenAI()
 

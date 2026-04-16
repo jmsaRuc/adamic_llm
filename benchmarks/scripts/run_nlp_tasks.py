@@ -8,8 +8,10 @@ import argparse
 from datetime import datetime
 from tqdm import tqdm
 from dotenv import load_dotenv
+from csv import DictWriter
+from json import dumps
 
-load_dotenv("../benchmark.env")
+load_dotenv("benchmark.env")
 
 
 def get_args():
@@ -18,7 +20,16 @@ def get_args():
         "--task",
         type=str,
         default="mgsm",
-        choices=["mgsm", "xcopa", "xnli", "paws-x", "xlsum", "mkqa"],
+        choices=[
+            "mgsm",
+            "xcopa",
+            "xnli",
+            "paws-x",
+            "xlsum",
+            "mkqa",
+            "mmmlu",
+            "global_mmlu",
+        ],
         help="the name of the task",
     )
     parser.add_argument(
@@ -29,6 +40,12 @@ def get_args():
         type=str,
         default="default",
         help="[default, openai, together, vllm, groq]",
+    )
+    parser.add_argument(
+        "--max_tokens",
+        type=int,
+        default=2048,
+        help="max tokens for generation, only used for vllm and groq",
     )
     parser.add_argument(
         "--model_judge", type=str, default="gpt-3.5-turbo-1106", help="judge model name"
@@ -100,7 +117,7 @@ def get_agent(args):
         "",
         model=args.model,
         temperature=0,
-        max_tokens=1024,
+        max_tokens=args.max_tokens if hasattr(args, "max_tokens") else 2048,
         model_loaded=model_loaded,
         tokenizer=tokenizer,
         model_type=args.model_type,
@@ -147,6 +164,7 @@ def inference(args):
         if check_ans(args, res1):
             ans = clean_ans(args, res1)
         else:
+            print("invalid answer format, trying again")
             ans = agent_base.respond(prompt_for_ans)
             ans = clean_ans(args, ans)
 
@@ -181,6 +199,7 @@ def post_process(args):
     list_A = []
     list_pred = []
     list_check = []
+    list_metadata = []
     for idx in tqdm(list_idx):
         file_path = os.path.join(output_folder, f"{idx}.json")
         with open(file_path, "r") as f:
@@ -192,19 +211,67 @@ def post_process(args):
             response = item["message"][-1]["content"]
             item["pred"] = clean_ans(args, response)
             item["check"] = evaluate_item(args, item)
+
             with open(file_path, "w") as f:
                 json.dump(item, f, indent=2, ensure_ascii=False)
         list_Q.append(item["prompt"])
         list_A.append(item["label"])
         list_pred.append(item["pred"])
         list_check.append(item["check"])
+        if args.task == "global_mmlu":
+            if item["is_annotated"]:
+                list_metadata.append(item["cultural_sensitivity_label"])
+            else:
+                list_metadata.append("not_annotated")
 
-    df = pd.DataFrame(
-        {"Q": list_Q, "A": list_A, "pred": list_pred, "check": list_check}
-    )
+    if args.task == "global_mmlu":
+        df = pd.DataFrame(
+            {
+                "Q": list_Q,
+                "A": list_A,
+                "pred": list_pred,
+                "check": list_check,
+                "metadata": list_metadata,
+            }
+        )
+    else:
+        df = pd.DataFrame(
+            {"Q": list_Q, "A": list_A, "pred": list_pred, "check": list_check}
+        )
     df.to_csv(f"{output_folder}/summary.csv", index=False)
 
-    print("accuracy: ", np.mean(list_check))
+    percentages_map: dict[str, float] = {}
+    if args.task == "global_mmlu":
+        values, counts = np.unique(list_metadata, return_counts=True)
+        percentages = (counts / np.size(list_metadata)) * 100
+        percentages_map = dict(zip(values, percentages))
+        print(f"Cultural sensitivity distribution: {dumps(percentages_map, indent=2)}")
+
+    print("Accuracy: ", np.mean(list_check))
+
+    if args.task == "global_mmlu":
+        with open(f"{output_folder}/cultural_sensitivity.txt", "w") as f:
+            f.write(dumps(percentages_map, indent=2))
+        args_cultural_sensitivit_map = {
+            "args.model": args.model,
+            "args.prompt_type": args.prompt_type,
+            "args.lang": args.lang,
+            "num_samples": num_samples,
+            "not_annotated": percentages_map.get("not_annotated", 0),
+            "CS": percentages_map.get("CS", 0),
+            "CA": percentages_map.get("CA", 0),
+        }
+
+        with open(
+            f"{args.results_folder}/cultural_sensitivity_{args.task}.csv",
+            "a",
+            newline="",
+        ) as f:
+            w = DictWriter(f, args_cultural_sensitivit_map.keys())
+            if f.tell() == 0:  # Check if file is empty to write header
+                w.writeheader()
+            w.writerow(args_cultural_sensitivit_map)
+
     with open(f"{output_folder}/accuracy.txt", "w") as f:
         f.write(str(np.mean(list_check)))
 

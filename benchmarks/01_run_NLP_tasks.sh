@@ -1,4 +1,4 @@
-num_samples=10
+num_samples=1
 results_folder=results
 overwrite=1
 do_inference=1
@@ -10,9 +10,10 @@ script=run_nlp_tasks.py
 model=openai/gpt-oss-120b
 model_type=groq
 model_judge=anthropic/claude-opus-4.6
+
 lang_list=all
-prompt_type_list=direct_native
-task_list=all
+prompt_type_list=direct,direct_native
+task_list="mmmlu,global_mmlu"
 
 gpu=1,2
 

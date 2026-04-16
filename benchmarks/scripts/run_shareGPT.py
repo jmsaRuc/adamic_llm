@@ -9,7 +9,7 @@ from datetime import datetime
 from tqdm import tqdm
 from dotenv import load_dotenv
 
-load_dotenv("../benchmark.env")
+load_dotenv("benchmark.env")
 
 
 def get_args():

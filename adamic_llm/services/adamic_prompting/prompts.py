@@ -11,7 +11,6 @@ Use the English question to generate the answer.
 Ensure the answer is in English.
 Use the {detected_language} question to generate the English answer with a correct language context and cultural context.
 For native terms and concepts that are difficult to translate, use the {detected_language} term in the English answer, dont write that this tearm is in {detected_language}, just use the term as it is.
-All numbers should be numerals (e.g., "3" instead of "three")
 </CONTEXT>
 
 {system_message_content}
@@ -34,8 +33,6 @@ Use the example provided as a guide for the translation.
 </GOAL>
 
 <RQUREMENTS>
-- all numbers should be Western numerals (e.g., "3" instead of "three").
-- dont translate numbers
 - do not add any extra text or explanations
 - do not add any extra line breaks
 - do not add any extra spaces

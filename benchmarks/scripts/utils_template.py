@@ -33,6 +33,16 @@ dic_answer_word = {
     "ko": "대답",
     "ru": "Ответ",
     "pt": "Resposta",
+    "he": "תְשׁוּבָה",
+    "ne": "जवाफ",
+    "pl": "Odpowiedź",
+    "si": "ප්රතිචාරය",
+    "sn": "Mhinduro",
+    "so": "Jawaab",
+    "sr": "Одговор",
+    "sv": "Svar",
+    "yo": "Ìdáhùn",
+    "fa": "پاسخ",
 }
 dic_lang_native = {
     "zh": "中文",
@@ -62,6 +72,16 @@ dic_lang_native = {
     "ko": "한국어",
     "ru": "русский",
     "pt": "Português",
+    "so": "Soomaaliga",
+    "sr": "Српски",
+    "sn": "ChiShona",
+    "si": "සිංහල",
+    "pl": "Polski",
+    "fa": "فارسی",
+    "ne": "नेपाली",
+    "he": "עברית",
+    "yo": "Yorùbá",
+    "sv": "Svenska",
 }
 dic_template_cot = {
     "cot": {
@@ -195,6 +215,38 @@ dic_template_basic = {
         "tr": "Soruyu bir veya birkaç kelimeyle yanıtlayın {}: {}?",
         "th": "ตอบคำถามด้วยคำเดียวหรือสองสามคำใน {}: {}?",
     },
+    "mmmlu": {
+        "ar": "أجب عن سؤال الاختيار من متعدد التالي:\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+        "bn": "নিম্নলিখিত বহু-নির্বাচনী প্রশ্নটির উত্তর দিন।:\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+        "de": "Beantworten Sie die folgende Multiple-Choice-Frage:\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+        "es": "Responda a la siguiente pregunta de opción múltiple:\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+        "fr": "Répondez à la question à choix multiples suivante :\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+        "hi": "नीचे दिए गए मल्टिपल चॉइस सवाल का जवाब दें:\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+        "id": "Jawablah pertanyaan pilihan ganda berikut:\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+        "it": "Rispondi alla seguente domanda a scelta multipla:\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+        "ja": "以下の多肢選択式問題に答えてください。\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+        "ko": "다음 객관식 문제에 답하시오:\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+        "pt": "Responda à seguinte questão de múltipla escolha:\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+        "sw": "Jibu swali la chaguo nyingi lifuatalo:\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+        "yo": "Dahun ibeere pupọ ti o yan:\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+        "zh_cn": "请回答以下选择题：\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+    },
+    "global_mmlu": {
+        "en": "Answer the following multiple choice question:\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+        "de": "Beantworten Sie die folgende Multiple-Choice-Frage:\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+        "fa": "به سوال چند گزینه ای زیر پاسخ دهید:\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+        "fr": "Répondez à la question à choix multiples suivante :\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+        "he": "ענו על שאלת הבחירה הרב-ברירתית הבאה:\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+        "ja": "以下の多肢選択式問題に答えてください。\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+        "ne": "निम्न बहुविकल्पीय प्रश्नको उत्तर दिनुहोस्:\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+        "pl": "Odpowiedz na następujące pytanie wielokrotnego wyboru:\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+        "si": "පහත බහුවරණ ප්‍රශ්නයට පිළිතුරු සපයන්න:\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+        "sn": "Pindura mubvunzo unotevera wesarudzo dzakawanda:\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+        "so": "Ka jawaab su'aasha soo socota ee xulashada badan:\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+        "sr": "Одговорите на следеће питање са вишеструким избором:\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+        "sv": "Svara på följande flervalsfråga:\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+        "yo": "Dahun ibeere pupọ ti o yan:\n{}\nA) {}\nB) {}\nC) {}\nD) {}",
+    },
 }
 
 dic_tempalte_format = {
@@ -225,6 +277,17 @@ dic_tempalte_format = {
         "ta": "உங்கள் இறுதி பதிலை பின்வருமாறு வடிவமைக்க வேண்டும்:",
         "ar": "يجب عليك تنسيق إجابتك النهائية على النحو التالي:",
         "qu": "Qhipa kutichiyniykitaqa kayhinata formato ruwanayki tiyan:",
+        "pt": "Você deve formatar sua resposta final da seguinte maneira:",
+        "yo": "O yẹ ki o ṣe agbekalẹ idahun ikẹhin rẹ bi:",
+        "fa": "شما باید پاسخ نهایی خود را به صورت زیر قالب‌بندی کنید:",
+        "he": "עליך לנסח את תשובתך הסופית כך:",
+        "ne": "तपाईंले आफ्नो अन्तिम उत्तरलाई यसरी ढाँचाबद्ध गर्नुपर्छ:",
+        "pl": "Odpowiedź końcową należy sformatować w następujący sposób:",
+        "si": "ඔබේ අවසාන පිළිතුර මෙසේ ආකෘතිගත කළ යුතුය:",
+        "sn": "Iwe unofanirwa kuronga mhinduro yako yekupedzisira se:",
+        "so": "Waa inaad u qaabaysaa jawaabtaada u dambaysa sida:",
+        "sr": "Требало би да форматирате свој коначни одговор као:",
+        "sv": "Du bör formatera ditt slutliga svar så här:",
     },
     "mgsm": {
         "en": "Arabic numeral",
@@ -297,6 +360,38 @@ dic_tempalte_format = {
         "vi": "Bạn nên định dạng câu trả lời cuối cùng của mình bằng một hoặc một vài từ như sau:",
         "tr": "Son cevabınızı bir veya birkaç kelimeyle şu şekilde biçimlendirmelisiniz:",
         "th": "คุณควรจัดรูปแบบคำตอบสุดท้ายเป็นคำเดียวหรือสองสามคำดังนี้:",
+    },
+    "mmmlu": {
+        "ar": "لا يمكن أن يكون إلا واحداً من الخيارات",
+        "bn": "এর মধ্যে কেবল একটিই হতে পারে",
+        "de": "kann nur einer der Buchstaben",
+        "es": "Solo puede ser uno de",
+        "fr": "ne peut être que l'un des",
+        "hi": "केवल एक ही हो सकता है",
+        "id": "hanya bisa salah satu dari",
+        "it": "può essere solo uno tra",
+        "ja": "のいずれか1つのみ",
+        "ko": "중 하나만 가능합니다",
+        "pt": "Só pode ser uma das letras",
+        "sw": "inaweza tu kuwa moja ya",
+        "yo": "le nikan jẹ ọkan ninu",
+        "zh_cn": "只能是以下之一",
+    },
+    "global_mmlu": {
+        "en": "can only be one of",
+        "de": "kann nur einer der Buchstaben",
+        "fa": "فقط میتونه یکی از",
+        "fr": "ne peut être que l'un des",
+        "he": "כול להיות רק אחד מ-",
+        "ja": "のいずれか1つのみ",
+        "ne": "मध्ये एउटा मात्र हुन सक्छ",
+        "pl": "może być tylko jednym z",
+        "si": "වලින් එකක් පමණක් විය හැකිය",
+        "sn": "inogona kungova imwe",
+        "so": "kaliya waxay noqon kartaa mid ka mid ah",
+        "sr": "може бити само један од",
+        "sv": "kan bara vara en av",
+        "yo": "le nikan jẹ ọkan ninu",
     },
 }
 
@@ -372,6 +467,38 @@ dic_tempalte_round2 = {
         "vi": "Vì vậy, câu trả lời là",
         "tr": "Bu nedenle cevap",
         "th": "ดังนั้นคำตอบก็คือ",
+    },
+    "mmmlu": {
+        "ar": "إذن، الإجابة (A/B/C/D) هي",
+        "bn": "সুতরাং, উত্তর (A/B/C/D) হলো",
+        "de": "Daher lautet die Antwort (A/B/C/D)",
+        "es": "Por lo tanto, la respuesta (A/B/C/D) es",
+        "fr": "La réponse (A/B/C/D) est donc",
+        "hi": "अतः, उत्तर (A/B/C/D) है",
+        "id": "Oleh karena itu, jawabannya (A/B/C/D) adalah",
+        "it": "Pertanto, la risposta (A/B/C/D) è",
+        "ja": "したがって、答え（A/B/C/D）は",
+        "ko": "따라서 정답은 (A/B/C/D)입니다.",
+        "pt": "Portanto, a resposta (A/B/C/D) é1",
+        "sw": "Kwa hivyo, jibu (A/B/C/D) ni",
+        "yo": "Nitorina, idahun (A/B/C/D) jẹ",
+        "zh_cn": "因此，答案（A/B/C/D）是",
+    },
+    "global_mmlu": {
+        "en": "Therefore, the answer (A/B/C/D) is",
+        "de": "Daher lautet die Antwort (A/B/C/D)",
+        "fr": "La réponse (A/B/C/D) est donc",
+        "ja": "したがって、答え（A/B/C/D）は",
+        "yo": "Nitorina, idahun (A/B/C/D) jẹ",
+        "fa": "بنابراین، پاسخ (A/B/C/D) عبارت است از",
+        "he": "לכן, התשובה (A/B/C/D) היא",
+        "ne": "त्यसैले, उत्तर (A/B/C/D) हो",
+        "pl": "Dlatego odpowiedź (A/B/C/D) brzmi",
+        "si": "එබැවින්, පිළිතුර (A/B/C/D) වන්නේ",
+        "sn": "Naizvozvo, mhinduro (A/B/C/D) ndeye",
+        "so": "Sidaa darteed, jawaabta (A/B/C/D) waa",
+        "sr": "Стога је одговор (A/B/C/D)",
+        "sv": "Därför är svaret (A/B/C/D)",
     },
 }
 
@@ -847,6 +974,79 @@ def gen_prompt(args, item):
             prompt = template.format(lang=lang_codes[args.lang], text=item["text"])
         else:
             raise NotImplementedError
+    elif args.task == "mmmlu":
+        if args.prompt_type == "direct":
+            template = "Answer the following multiple choice question: \n{question}\nA) {option_a}\nB) {option_b}\nC) {option_c}\nD) {option_d}"
+            template = (
+                template
+                + '\nYou should format your final answer as: "Answer: <$LETTER>" LETTER can only be one of A/B/C/D.'
+            )
+            prompt = template.format(
+                question=item["Question"],
+                option_a=item["A"],
+                option_b=item["B"],
+                option_c=item["C"],
+                option_d=item["D"],
+            )
+        elif args.prompt_type == "google_direct":
+            template = "Answer the following multiple choice question: \n{question}\nA) {option_a}\nB) {option_b}\nC) {option_c}\nD) {option_d}"
+            template = (
+                template
+                + '\nYou should format your final answer as: "Answer: <$LETTER>" LETTER can only be one of A/B/C/D.'
+            )
+            prompt = template.format(
+                question=item["Question"],
+                option_a=item["A"],
+                option_b=item["B"],
+                option_c=item["C"],
+                option_d=item["D"],
+            )
+        elif args.prompt_type == "direct_native":
+            template = dic_template_basic[args.task][args.lang]
+            output_format = f'{dic_tempalte_format["general"][args.lang]} "{dic_answer_word[args.lang]}: <$LETTER>" LETTER {dic_tempalte_format["mmmlu"][args.lang]} A/B/C/D.'
+            template = template + "\n" + output_format
+            prompt = template.format(
+                item["Question"], item["A"], item["B"], item["C"], item["D"]
+            )
+
+    elif args.task == "global_mmlu":
+        if args.prompt_type == "direct":
+            template = "Answer the following multiple choice question: \n{question}\nA) {option_a}\nB) {option_b}\nC) {option_c}\nD) {option_d}"
+            template = (
+                template
+                + '\nYou should format your final answer as: "Answer: <$LETTER>" LETTER can only be one of A/B/C/D.'
+            )
+            prompt = template.format(
+                question=item["question"],
+                option_a=item["option_a"],
+                option_b=item["option_b"],
+                option_c=item["option_c"],
+                option_d=item["option_d"],
+            )
+        elif args.prompt_type == "google_direct":
+            template = "Answer the following multiple choice question: \n{question}\nA) {option_a}\nB) {option_b}\nC) {option_c}\nD) {option_d}"
+            template = (
+                template
+                + '\nYou should format your final answer as: "Answer: <$LETTER>" LETTER can only be one of A/B/C/D.'
+            )
+            prompt = template.format(
+                question=item["question"],
+                option_a=item["option_a"],
+                option_b=item["option_b"],
+                option_c=item["option_c"],
+                option_d=item["option_d"],
+            )
+        elif args.prompt_type == "direct_native":
+            template = dic_template_basic[args.task][args.lang]
+            output_format = f'{dic_tempalte_format["general"][args.lang]} "{dic_answer_word[args.lang]}: <$LETTER>" LETTER {dic_tempalte_format["global_mmlu"][args.lang]} A/B/C/D.'
+            template = template + "\n" + output_format
+            prompt = template.format(
+                item["question"],
+                item["option_a"],
+                item["option_b"],
+                item["option_c"],
+                item["option_d"],
+            )
     elif (
         args.task == "shareGPT"
         or args.task == "wildchat"
@@ -882,6 +1082,8 @@ def get_prompt_ans(args):
                 prompt_for_ans = prompt_for_ans.format(lang=lang_codes[args.lang])
             else:
                 prompt_for_ans = "Therefore, the answer is"
+        elif args.task == "mmmlu":
+            prompt_for_ans = "Therefore, the answer (A/B/C/D) is"
         else:
             raise NotImplementedError
     return prompt_for_ans
@@ -1022,6 +1224,34 @@ def clean_ans(args, pred_str):
         if args.prompt_type == "google" or args.prompt_type == "google_direct":
             pred_str = get_translation_google(pred_str, dest=args.lang)
         return pred_str
+    elif args.task == "mmmlu" or args.task == "global_mmlu":
+        if args.prompt_type in ["direct_native"]:
+            pattern1 = f"{answer_word}:\s*([A-D])"
+            pred1 = re.findall(pattern1, pred_str)
+            pattern = "([A-D])"
+            pred = re.findall(pattern, pred_str)
+            if len(pred1) >= 1:
+                pred = pred1[-1]
+                return pred if pred in ["A", "B", "C", "D"] else -1
+            elif len(pred) >= 1:
+                pred = pred[-1]
+                return pred if pred in ["A", "B", "C", "D"] else -1
+            else:
+                return -1
+        else:
+            pattern1 = "Answer: ([A-D])"
+            pred1 = re.findall(pattern1, pred_str)
+            if len(pred1) >= 1:
+                pred = pred1[-1]
+                return pred if pred in ["A", "B", "C", "D"] else -1
+            else:
+                pattern = "([A-D])"
+                pred = re.findall(pattern, pred_str)
+                if len(pred) >= 1:
+                    pred = pred[-1]
+                    return pred if pred in ["A", "B", "C", "D"] else -1
+                else:
+                    return -1
     elif (
         args.task == "shareGPT"
         or args.task == "wildchat"
@@ -1138,20 +1368,26 @@ def check_ans(args, pred):
         if args.prompt_type == "direct_native" or args.prompt_type == "native_cot"
         else dic_answer_word["en"]
     )
-    if args.task == "mgsm" or args.task == "mkqa" or args.task == "xlsum":
+    if (
+        args.task == "mgsm"
+        or args.task == "mkqa"
+        or args.task == "xlsum"
+        or args.task == "mmmlu"
+        or args.task == "global_mmlu"
+    ):
         # return "Answer: " in pred
         return f"{answer_word}:" in pred
     if args.task == "xcopa":
         # return "Answer: 1" in pred or "Answer: 2" in pred
         return f"{answer_word}: 1" in pred or f"{answer_word}: 2" in pred
-    elif args.task == "xnli":
+    if args.task == "xnli":
         # return "Answer: Yes" in pred or "Answer: No" in pred or "Answer: Maybe" in pred
         return (
             f"{answer_word}: 1" in pred
             or f"{answer_word}: 2" in pred
             or f"{answer_word}: 3" in pred
         )
-    elif args.task == "paws-x":
+    if args.task == "paws-x":
         # return "Answer: Yes" in pred or "Answer: No" in pred
         return f"{answer_word}: 1" in pred or f"{answer_word}: 2" in pred
     # elif args.task == "mkqa" or args.task == "xlsum":
@@ -1178,6 +1414,12 @@ def evaluate_item(args, item):
         scores = args.rouge_scorer.score(item["summary"], item["pred"])
         item["scores"] = scores
         return scores[0]
+    elif args.task == "mmmlu":
+        item["label"] = item["Answer"]
+        return item["pred"] == item["Answer"]
+    elif args.task == "global_mmlu":
+        item["label"] = item["answer"]
+        return item["pred"] == item["answer"]
     else:
         return NotImplementedError
 
