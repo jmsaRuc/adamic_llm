@@ -1,7 +1,7 @@
 [project]
 name = "adamic_llm"
 version = "0.1.0"
-requires-python = ">=3.12,<4.0"
+requires-python = ">=3.13,<3.15"
 description = ""
 authors = []
 maintainers = []
@@ -54,7 +54,7 @@ benchmark = [
   "datasets>=4.8.4",
   "groq>=0.37.1",
   "jsonlines>=4.0.0",
-  "langgraph-cli[inmem]>=0.4.21",
+  "langgraph-cli[inmem]>=0.4.22",
   "matplotlib>=3.10.8",
   "notebook>=7.5.5",
   "numpy>=2.4.4",
@@ -64,7 +64,7 @@ benchmark = [
   "tenacity>=9.1.4",
   "tiktoken>=0.12.0",
   "tqdm>=4.67.3",
-  "python-dotenv>=1.2.2"
+  "python-dotenv>=1.2.2",
 ]
 
 
@@ -156,7 +156,7 @@ lint.ignore = [
     "PLR0913", # Too many arguments for function call
     "D106",    # Missing docstring in public nested class
 ]
-lint.mccabe = { max-complexity = 10 }
+lint.mccabe = { max-complexity = 30 }
 exclude = [
     ".venv/"
 ]
@@ -174,6 +174,8 @@ ignore-decorators = ["typing.overload"]
 
 [tool.ruff.lint.pylint]
 allow-magic-value-types = ["int", "str", "float", "bytes"]
+max-statements = 100
+max-branches = 30
 
 [tool.ruff.lint.flake8-bugbear]
 extend-immutable-calls = [

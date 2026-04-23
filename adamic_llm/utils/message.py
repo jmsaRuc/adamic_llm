@@ -23,7 +23,7 @@ def convert_to_lc_messages(
         if m.role in {"system", "developer"}:
             lc_messages.append(SystemMessage(content=m.content or ""))
         elif m.role == "user":
-            lc_messages.append(HumanMessage(content=m.content or ""))
+            lc_messages.append(HumanMessage(content=m.content or "", name=m.name or ""))
         elif m.role == "assistant":
-            lc_messages.append(AIMessage(content=m.content or ""))
+            lc_messages.append(AIMessage(content=m.content or "", name=m.name or ""))
     return lc_messages

@@ -110,8 +110,7 @@ You can read more about pre-commit here: https://pre-commit.com/
 If you want to run it in docker, simply run:
 
 ```bash
-docker-compose run --build --rm api pytest -vv .
-docker-compose down
+docker-compose run --build --rm api pytest -vv . && docker-compose down
 ```
 
 For running tests on your local machine.

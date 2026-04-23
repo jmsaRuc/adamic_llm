@@ -1082,7 +1082,7 @@ def get_prompt_ans(args):
                 prompt_for_ans = prompt_for_ans.format(lang=lang_codes[args.lang])
             else:
                 prompt_for_ans = "Therefore, the answer is"
-        elif args.task == "mmmlu":
+        elif args.task == "mmmlu" or args.task == "global_mmlu":
             prompt_for_ans = "Therefore, the answer (A/B/C/D) is"
         else:
             raise NotImplementedError

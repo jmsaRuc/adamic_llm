@@ -10,6 +10,8 @@ import time
 import uuid
 from collections.abc import AsyncIterator
 
+from redis.asyncio import ConnectionPool
+
 from adamic_llm.services.graph.graph_registry import GraphRegistry
 from adamic_llm.services.graph.runner import (
     run_langgraph,
@@ -34,14 +36,17 @@ class ChatCompletionService:
     """Service for handling chat completions."""
 
     async def generate_completion(
-        self, chat_request: ChatCompletionRequest, graph_registry: GraphRegistry
+        self,
+        chat_request: ChatCompletionRequest,
+        graph_registry: GraphRegistry,
+        redis_pool: ConnectionPool,
     ) -> ChatCompletionResponse:
         """Generate a chat completion.
 
         Args:
             chat_request: The chat completion request.
             graph_registry: The GraphRegistry object containing registered graphs.
-
+            redis_pool: The Redis connection pool.
         Returns:
             A chat completion response.
 
@@ -51,10 +56,11 @@ class ChatCompletionService:
         start_time = time.time()
 
         # Get the completion from the LangGraph model
-        completion, tokens_used = await run_langgraph(
+        completion, name, tokens_used = await run_langgraph(
             model=chat_request.model,
             messages=chat_request.messages,
             graph_registry=graph_registry,
+            redis_pool=redis_pool,
         )
 
         # Build the response
@@ -68,6 +74,7 @@ class ChatCompletionService:
                     message=ChatCompletionResponseMessage(
                         role=Role.ASSISTANT,
                         content=completion,
+                        name=name,
                     ),
                     finish_reason="stop",
                 )

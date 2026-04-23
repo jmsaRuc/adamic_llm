@@ -18,7 +18,7 @@ class SearchAPI(Enum):
 class Configuration(BaseModel):
     """The configurable fields for adamic-llm."""
 
-    mode: Literal["direct", "native", "basic-translation", "adamic"] = Field(
+    mode: Literal["direct", "basic-translation", "adamic", "dev"] = Field(
         default="adamic",
         title="Mode of Operation",
         description="Mode of operation for the research assistant",

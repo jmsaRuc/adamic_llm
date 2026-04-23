@@ -108,6 +108,7 @@ class ChatCompletionResponseMessage(BaseModel):
 
     role: Role
     content: str | None = None
+    name: str | None = None
     function_call: FunctionCall | None = None
     tool_calls: list[ToolCall] | None = None
 

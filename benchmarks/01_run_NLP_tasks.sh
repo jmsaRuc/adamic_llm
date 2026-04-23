@@ -12,8 +12,8 @@ model_type=groq
 model_judge=anthropic/claude-opus-4.6
 
 lang_list=all
-prompt_type_list=direct,direct_native
-task_list="mmmlu,global_mmlu"
+prompt_type_list=direct
+task_list="global_mmlu"
 
 gpu=1,2
 

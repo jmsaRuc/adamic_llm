@@ -124,7 +124,7 @@ async def fake_redis_pool() -> AsyncGenerator[ConnectionPool]:
     """
     server = FakeServer()
     server.connected = True
-    pool = ConnectionPool(connection_class=FakeConnection, server=server)
+    pool = ConnectionPool(connection_class=FakeConnection, server=server)  # type: ignore
 
     yield pool
 

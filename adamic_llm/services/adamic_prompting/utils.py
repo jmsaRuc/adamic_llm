@@ -1,12 +1,15 @@
 import logging
+import uuid
 from typing import Any
 
 import pycountry
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, AnyMessage, HumanMessage, SystemMessage
 
 from adamic_llm.services.adamic_prompting.state import SummaryState
 
 log = logging.getLogger("adamic_prompting.graph")
+
+# for dev mode, to use in memory history instead of redis
 
 
 async def get_config_value(value: Any) -> str:
@@ -89,23 +92,23 @@ async def format_sources(search_results: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-async def get_native_name(contry_code: str) -> str:
+async def get_lang_name(country_code: str) -> str:
     """
     Get the native name of a language based on its ISO 639-1 country code.
 
     Args:
-        contry_code (str): The ISO 639-1 country code for the language.
+        country_code (str): The ISO 639-1 country code for the language.
     Returns:
         str: The native name of the language corresponding to the provided country code.
     """
 
-    language = pycountry.languages.get(alpha_2=contry_code)
+    language = pycountry.languages.get(alpha_2=country_code)
     if language is None:
         log.warning(
-            f"Language with country code '{contry_code}'"
+            f"Language with country code '{country_code}'"
             " not found. Returning country code as fallback."
         )
-        return contry_code
+        return country_code
 
     return language.name
 
@@ -128,7 +131,27 @@ async def get_latest_human_message(state: SummaryState) -> HumanMessage | None:
     return message
 
 
-async def get_latest_system_message(state: SummaryState) -> SystemMessage | None:
+async def get_content_from_message(message: AnyMessage) -> str | None:
+    """
+    Retrieve the content from a message.
+
+    Args:
+        message (AnyMessage): The message to extract content from.
+
+    Returns:
+        str | None: The content of the message, or None if no content is available.
+    """
+    if not message:
+        return None
+    if not hasattr(message, "text"):
+        return None
+    content = message.text if message.text else None
+    if not content or not isinstance(content, str):
+        return None
+    return content
+
+
+async def get_system_message(state: SummaryState) -> SystemMessage | None:
     """
     Retrieve the latest system message from the state.
 
@@ -136,7 +159,10 @@ async def get_latest_system_message(state: SummaryState) -> SystemMessage | None
         SystemMessage | None: The latest system message
             in the conversation, or None if no system messages.
     """
-    message = state["messages"][-2] if len(state["messages"]) >= 2 else None
+    if not state["messages"] or len(state["messages"]) <= 0:
+        return None
+
+    message = state["messages"][0]
 
     if message is None:
         return None
@@ -144,3 +170,138 @@ async def get_latest_system_message(state: SummaryState) -> SystemMessage | None
         return None
 
     return message
+
+
+async def insert_name_into_ai_message(ai_message: AIMessage, name: str) -> AIMessage:
+    """
+    Insert the provided name into the AI message.
+
+    Args:
+        ai_message (AIMessage): The AI message to update.
+        name (str): The name to insert into the AI message.
+    Returns:
+        AIMessage: The updated AI message with the name inserted.
+
+    """
+    if ai_message is None:
+        raise ValueError("AI message must not be None.")
+    if ai_message.type != "ai":
+        raise ValueError("Provided message is not an AI message.")
+    if not name:
+        raise ValueError("Name must not be empty.")
+
+    ai_message.name = name
+
+    return ai_message
+
+
+async def get_request_message_history(state: SummaryState) -> list[AnyMessage] | None:
+    """Retrieve the history of human messages, excluding the latest human message.
+
+    Returns:
+        list[AnyMessage] | None:
+            The history of human messages
+            in the conversation, excluding the latest human message,
+            or None if no human messages.
+    """
+
+    if not state["messages"] or len(state["messages"]) <= 0:
+        raise ValueError(
+            "State messages can not be empty when retrieving request message history."
+        )
+    messages = state["messages"]
+    if messages[0].type != "system" and len(messages) <= 1:
+        return None
+    if messages[0].type == "system" and len(messages) <= 2:
+        return None
+
+    if messages[0].type == "system":
+        messages_no_system = messages[1:]
+
+        return messages_no_system[:-1] if messages_no_system else None
+
+    return messages[:-1] if messages else None
+
+
+async def get_history_key_lang_from_request_message_history(
+    request_message_history: list[AnyMessage],
+) -> tuple[str, str]:
+    """Extract the history key and detected language code from request message history.
+
+    Args:
+    request_message_history (list[AnyMessage]):
+        The history of messages in the current conversation, excluding
+        the latest message and system messages.
+        Expected to contain pairs of human and AI messages.
+
+    Returns:
+    tuple[str, str]:
+        A tuple containing the extracted history key and detected language code.
+    """
+    if request_message_history is None or len(request_message_history) <= 0:
+        raise ValueError(
+            "Request message history is empty."
+            "Cannot extract history key without any messages in the history."
+        )
+
+    if request_message_history[-1].type != "ai":
+        raise ValueError(
+            "Latest message in request message history is not an AI message."
+            "History key extraction expects the latest message to be an AI message."
+        )
+    if request_message_history[-1].name is None:
+        raise ValueError(
+            "Latest AI message does not have a name to extract history key from."
+        )
+
+    key_lang = request_message_history[-1].name
+    key, lang_code = (
+        key_lang.split("_") if key_lang and "_" in key_lang else (None, None)
+    )
+
+    if not key:
+        raise ValueError(
+            "Could not extract key from message name"
+            f" '{key_lang}'. Expected format 'key_langcode'."
+        )
+    if not lang_code:
+        raise ValueError(
+            "Could not extract language code from message name"
+            f" '{key_lang}'. Expected format 'key_langcode'."
+        )
+    return key, lang_code
+
+
+async def create_key_lang(key: str, detected_language_code: str) -> str:
+    """
+    Create a key for message name based on the detected language code, and key.
+
+    Args:
+        key (str): The base key for Redis message history.
+        detected_language_code (str):
+            The ISO 639-1 country code for the detected language.
+    Returns:
+        str: A unique key for message name in the format 'key_detected_language_code'.
+    """
+    if not key:
+        raise ValueError(
+            "Base key must not be empty when creating new unique key for Redis."
+        )
+    if not detected_language_code:
+        raise ValueError(
+            "Detected language code must not be empty,"
+            " when creating new unique key for Redis."
+        )
+
+    return f"{key}_{detected_language_code}"
+
+
+async def create_new_unique_key() -> str:
+    """
+    Create a new unique key for Redis without language code.
+
+    Returns:
+    str: A unique key for Redis in the format 'uuid'.
+    """
+
+    return f"{uuid.uuid4()}"

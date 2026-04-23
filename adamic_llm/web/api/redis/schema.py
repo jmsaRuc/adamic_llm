@@ -1,8 +1,8 @@
 from pydantic import BaseModel
 
 
-class RedisValueDTO(BaseModel):
-    """DTO for redis values."""
+class RedisListDTO(BaseModel):
+    """DTO for redis list values."""
 
     key: str
-    value: str | None
+    value_list: list[str] | None

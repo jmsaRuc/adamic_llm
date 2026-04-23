@@ -1,18 +1,20 @@
-from fastapi import APIRouter
-from fastapi.param_functions import Depends
+from collections.abc import Awaitable
+from typing import cast
+
 from redis.asyncio import ConnectionPool, Redis
 
-from adamic_llm.services.redis.dependency import get_redis_pool
-from adamic_llm.web.api.redis.schema import RedisValueDTO
+from adamic_llm.web.api.redis.schema import RedisListDTO
 
-router = APIRouter()
+# for dev mode, to use in memory history instead of redis as mock
+in_memory_adamic_history: dict[str, list[str]] = {}
 
 
-@router.get("/", response_model=RedisValueDTO)
-async def get_redis_value(
+async def get_redis_list(
     key: str,
-    redis_pool: ConnectionPool = Depends(get_redis_pool),
-) -> RedisValueDTO:
+    redis_pool: ConnectionPool,
+    start: int = 0,
+    end: int = -1,
+) -> RedisListDTO:
     """
     Get value from redis.
 
@@ -21,24 +23,64 @@ async def get_redis_value(
     :returns: information from redis.
     """
     async with Redis(connection_pool=redis_pool) as redis:
-        redis_value = await redis.get(key)
-    return RedisValueDTO(
+        redis_list = await cast(
+            Awaitable[list[str]], redis.lrange(name=key, start=start, end=end)
+        )
+
+    return RedisListDTO(
         key=key,
-        value=redis_value,
+        value_list=redis_list,
     )
 
 
-@router.put("/")
-async def set_redis_value(
-    redis_value: RedisValueDTO,
-    redis_pool: ConnectionPool = Depends(get_redis_pool),
-) -> None:
+async def rpush_redis_list(
+    redis_value: RedisListDTO,
+    redis_pool: ConnectionPool,
+) -> int:
     """
-    Set value in redis.
+    Append values to a list in redis.
 
     :param redis_value: new value data.
     :param redis_pool: redis connection pool.
+    :returns: The index of the newly added element in the list.
     """
-    if redis_value.value is not None:
+    if redis_value.value_list is not None:
         async with Redis(connection_pool=redis_pool) as redis:
-            await redis.set(name=redis_value.key, value=redis_value.value)
+            return await cast(
+                Awaitable[int], redis.rpush(redis_value.key, *redis_value.value_list)
+            )
+    raise ValueError("Value must not be None when pushing to Redis list.")
+
+
+# for dev mode, to use in memory history instead of redis
+async def dev_get_in_memory_list(
+    key: str,
+) -> RedisListDTO:
+    """
+    Get value from in-memory history.
+
+    :param key: key to get data from.
+    :returns: information from in-memory history.
+    """
+    value_list = in_memory_adamic_history.get(key, [])
+    return RedisListDTO(
+        key=key,
+        value_list=value_list,
+    )
+
+
+async def dev_rpush_in_memory_list(
+    redis_value: RedisListDTO,
+) -> int:
+    """
+    Append values to a list in in-memory history.
+
+    :param redis_value: new value data.
+    :returns: The index of the newly added element in the list.
+    """
+    if redis_value.value_list is not None:
+        current_list = in_memory_adamic_history.get(redis_value.key, [])
+        current_list.extend(redis_value.value_list)
+        in_memory_adamic_history[redis_value.key] = current_list
+        return len(current_list) - 1  # return index of the last added element
+    raise ValueError("Value must not be None when pushing to in-memory history list.")

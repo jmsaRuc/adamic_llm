@@ -33,6 +33,7 @@ from typing import Any
 
 from langchain_core.messages import AIMessageChunk
 from langchain_core.runnables import RunnableConfig
+from redis.asyncio import ConnectionPool
 
 from adamic_llm.services.graph.graph_registry import GraphRegistry
 from adamic_llm.settings import settings
@@ -65,7 +66,8 @@ async def run_langgraph(
     model: str,
     messages: list[ChatCompletionRequestMessage],
     graph_registry: GraphRegistry,
-) -> tuple[str, dict[str, int]]:
+    redis_pool: ConnectionPool,
+) -> tuple[str, str, dict[str, int]]:
     """Run a LangGraph model with the given messages using the compiled workflow.
 
     This function processes input messages through a LangGraph workflow and returns
@@ -80,6 +82,7 @@ async def run_langgraph(
         model: The name of the model to use, which also determines which graph to use.
         messages: A list of messages to process through the LangGraph.
         graph_registry: The GraphRegistry instance containing registered graphs.
+        redis_pool: The Redis connection pool for any necessary Redis interactions.
 
     Returns:
         A tuple containing the generated response string
@@ -96,12 +99,12 @@ async def run_langgraph(
     except ValueError as e:
         logger.error(f"Error getting graph for model '{model}': {e}")
         raise e
-
     # Convert OpenAI messages to LangChain messages
     lc_messages = convert_to_lc_messages(messages)
     # Run the graph with the messages
-    result = await graph.ainvoke({"messages": lc_messages})
+    result = await graph.ainvoke({"messages": lc_messages, "redis_pool": redis_pool})
     response = result["messages"][-1].content if result["messages"] else ""
+    name = result["messages"][-1].name if result["messages"] else ""
 
     # Calculate token usage (approximate)
     prompt_tokens = sum(len((m.content or "").split()) for m in messages)
@@ -113,7 +116,7 @@ async def run_langgraph(
     }
 
     logger.info(f"LangGraph completion generated in {time.time() - start_time:.2f}s")
-    return response, token_usage
+    return response, name, token_usage
 
 
 async def run_langgraph_stream(

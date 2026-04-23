@@ -9,9 +9,11 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
+from redis.asyncio import ConnectionPool
 
 from adamic_llm.services.chat.service import ChatCompletionService
 from adamic_llm.services.graph.graph_registry import GraphRegistry
+from adamic_llm.services.redis.dependency import get_redis_pool
 from adamic_llm.web.api.chat.schema import (
     ChatCompletionRequest,
     ChatCompletionResponse,
@@ -28,6 +30,7 @@ async def create_chat_completion(
     chat_request: ChatCompletionRequest,
     service: Annotated[ChatCompletionService, Depends(ChatCompletionService)],
     graph_registry: Annotated[GraphRegistry, Depends(get_graph_registry_dependency)],
+    redis_pool: ConnectionPool = Depends(get_redis_pool),
 ) -> StreamingResponse | ChatCompletionResponse:
     """Create a chat completion.
 
@@ -37,6 +40,7 @@ async def create_chat_completion(
         chat_request: The parsed chat completion request.
         graph_registry: The graph registry dependency.
         service: The chat completion service dependency.
+        redis_pool: The Redis connection pool dependency.
 
     Returns:
         A chat completion response, either as a complete response or as a stream.
@@ -55,6 +59,8 @@ async def create_chat_completion(
         )
 
     logger.info("Generating non-streaming chat completion response")
-    response = await service.generate_completion(chat_request, graph_registry)
+    response = await service.generate_completion(
+        chat_request, graph_registry, redis_pool
+    )
     logger.info("Returning non-streaming chat completion response")
     return response
