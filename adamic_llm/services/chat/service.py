@@ -10,6 +10,7 @@ import time
 import uuid
 from collections.abc import AsyncIterator
 
+from google.cloud.translate_v3 import TranslationServiceAsyncClient
 from redis.asyncio import ConnectionPool
 
 from adamic_llm.services.graph.graph_registry import GraphRegistry
@@ -40,6 +41,7 @@ class ChatCompletionService:
         chat_request: ChatCompletionRequest,
         graph_registry: GraphRegistry,
         redis_pool: ConnectionPool,
+        google_translate_client: TranslationServiceAsyncClient,
     ) -> ChatCompletionResponse:
         """Generate a chat completion.
 
@@ -47,6 +49,7 @@ class ChatCompletionService:
             chat_request: The chat completion request.
             graph_registry: The GraphRegistry object containing registered graphs.
             redis_pool: The Redis connection pool.
+            google_translate_client: The Google Translate client.
         Returns:
             A chat completion response.
 
@@ -61,6 +64,7 @@ class ChatCompletionService:
             messages=chat_request.messages,
             graph_registry=graph_registry,
             redis_pool=redis_pool,
+            google_translate_client=google_translate_client,
         )
 
         # Build the response

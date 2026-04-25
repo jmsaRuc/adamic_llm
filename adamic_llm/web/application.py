@@ -38,7 +38,7 @@ def get_app() -> FastAPI:
             "groq_api_base": settings.groq_api_base,
             "google_project_id": settings.google_project_id,
             "google_application_credentials": settings.google_application_credentials,
-            "bypass": False,
+            "mode": "adamic",
         }
     )
     adamic_graph_with_config_bypass = adamic_graph.with_config(

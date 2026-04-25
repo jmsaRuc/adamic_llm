@@ -3,13 +3,14 @@ import os
 from typing import Literal
 
 from google.api_core.retry_async import AsyncRetry
-from google.cloud import translate_v3
+from google.cloud.translate_v3 import TranslationServiceAsyncClient
 from langchain_core.messages import AIMessage, AnyMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_groq import ChatGroq
 from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, MessagesState, StateGraph
+from redis.asyncio import ConnectionPool
 
 from adamic_llm.services.adamic_prompting.adamic_history import get_adamic_history
 from adamic_llm.services.adamic_prompting.configuration import Configuration
@@ -21,7 +22,6 @@ from adamic_llm.services.adamic_prompting.prompts import (
 )
 from adamic_llm.services.adamic_prompting.state import (
     SummaryState,
-    SummaryStateInput,
 )
 from adamic_llm.services.adamic_prompting.utils import (
     create_key_lang,
@@ -53,13 +53,11 @@ async def preprocess_input(
         config (RunnableConfig): Configuration specifying the Google Cloud project ID
         and application credentials.
     Returns:
-        dict[str, str | HumanMessage | list[AnyMessage] | bool]:
+        dict[str, str | HumanMessage | list[AnyMessage] | bool | None]:
             Updated state with the preprocessed question.
     """
     configurable = Configuration.from_runnable_config(config)
-
     mode = configurable.mode
-
     if mode == "direct":
         log.info("Preprocessing skipped since mode is set to direct")
         return {
@@ -106,7 +104,10 @@ async def preprocess_input(
             f"Extracted history key '{history_key}'"
             " from request message history for retrieving Adamic history from Redis"
         )
-        redis_pool = state.get("redis_pool", None)
+        if mode != "dev":
+            redis_pool: ConnectionPool = config["configurable"]["services"][
+                "redis_pool"
+            ]
         adamic_input_history, adamic_output_history = await get_adamic_history(
             request_message_history, history_key, redis_pool, mode
         )
@@ -160,6 +161,7 @@ async def router_main(
     if mode == "direct":
         log.info("Routing to adamic bypass node since mode is set to direct")
         return "adamic_bypass"
+    log.info("Routing to detect language node for language detection")
     return "detect_language"
 
 
@@ -182,7 +184,6 @@ async def detect_language(
         raise ValueError("question_none_en must not be None for language detection")
 
     configurable = Configuration.from_runnable_config(config)
-
     if (
         not configurable.google_project_id
         or not configurable.google_application_credentials
@@ -191,17 +192,30 @@ async def detect_language(
             "Google Cloud Project ID and application credentials",
             "must be provided in the configuration",
         )
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = (
-        configurable.google_application_credentials
-    )
 
-    google_client = translate_v3.TranslationServiceAsyncClient()
+    mode = configurable.mode
+    if mode != "dev":
+        google_client: TranslationServiceAsyncClient = config["configurable"][
+            "services"
+        ]["google_translate_client"]
+    else:
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = (
+            configurable.google_application_credentials
+        )
+        google_client = TranslationServiceAsyncClient()
+    if google_client is None:
+        raise ValueError(
+            "Google Translate client must not be None"
+            " in the state for language detection"
+        )
+
+    retry = AsyncRetry(initial=0.5, maximum=30, multiplier=2, timeout=240)
     parent = f"projects/{configurable.google_project_id}/locations/global"
 
-    retry = AsyncRetry(initial=0.5, maximum=30, multiplier=2, timeout=120)
     response = await google_client.detect_language(
         parent=parent, content=question_none_en, mime_type="text/plain", retry=retry
     )
+
     detected_language_code = response.languages[0].language_code
     detect_language_confidence = response.languages[0].confidence
 
@@ -297,14 +311,13 @@ async def adamic_bypass(
         redis_values = RedisListDTO(key=key, value_list=[question_en])
 
         if mode != "dev":
-            if state["redis_pool"] is None:
-                raise ValueError(
-                    "redis_pool must not be None for adamic bypass node in adamic mode"
-                )
+            redis_pool: ConnectionPool = config["configurable"]["services"][
+                "redis_pool"
+            ]
             try:
                 index = await rpush_redis_list(
                     redis_value=redis_values,
-                    redis_pool=state["redis_pool"],
+                    redis_pool=redis_pool,
                 )
                 log.info(
                     "Saved human message content to Redis list with key"
@@ -390,14 +403,10 @@ async def adamic_bypass(
             )
         redis_response_values = RedisListDTO(key=key_lang, value_list=[content])
         if mode != "dev":
-            if state["redis_pool"] is None:
-                raise ValueError(
-                    "redis_pool must not be None for adamic bypass node in adamic mode"
-                )
             try:
                 index = await rpush_redis_list(
                     redis_value=redis_response_values,
-                    redis_pool=state["redis_pool"],
+                    redis_pool=redis_pool,
                 )
                 log.info(
                     "Saved AI message content to Redis list with key"
@@ -463,12 +472,20 @@ async def translate_question(
     if not contents:
         raise ValueError("question_none_en must not be None for translation node")
 
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = (
-        configurable.google_application_credentials
-    )
-    google_client = translate_v3.TranslationServiceAsyncClient()
+    mode = configurable.mode
+    if mode != "dev":
+        google_client: TranslationServiceAsyncClient = config["configurable"][
+            "services"
+        ]["google_translate_client"]
+    else:
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = (
+            configurable.google_application_credentials
+        )
+        google_client = TranslationServiceAsyncClient()
+
+    retry = AsyncRetry(initial=0.5, maximum=30, multiplier=2, timeout=240)
     parent = f"projects/{configurable.google_project_id}/locations/global"
-    retry = AsyncRetry(initial=0.5, maximum=30, multiplier=2, timeout=120)
+
     response = await google_client.translate_text(
         parent=parent,
         contents=[contents],
@@ -577,14 +594,11 @@ async def adamic_input(
     redis_values = RedisListDTO(key=key, value_list=[question_en])
 
     if mode != "dev":
-        if state["redis_pool"] is None:
-            raise ValueError(
-                "redis_pool must not be None for adamic bypass node in adamic mode"
-            )
+        redis_pool: ConnectionPool = config["configurable"]["services"]["redis_pool"]
         try:
             index = await rpush_redis_list(
                 redis_values,
-                redis_pool=state["redis_pool"],
+                redis_pool=redis_pool,
             )
             log.info(
                 f"Saved input user prompt to Redis list with key {key} at index {index}"
@@ -666,14 +680,10 @@ async def adamic_input(
     # if dev mode, save to in-memory history instead of Redis
     redis_response_values = RedisListDTO(key=key, value_list=[content])
     if mode != "dev":
-        if state["redis_pool"] is None:
-            raise ValueError(
-                "redis_pool must not be None for adamic bypass node in adamic mode"
-            )
         try:
             index = await rpush_redis_list(
                 redis_response_values,
-                redis_pool=state["redis_pool"],
+                redis_pool=redis_pool,
             )
             log.info(
                 "Saved AI message content from input node to Redis list"
@@ -864,7 +874,7 @@ async def adamic_output(
 # Add nodes and edges
 builder = StateGraph(
     SummaryState,
-    input=SummaryStateInput,
+    input=MessagesState,
     output=MessagesState,
     config_schema=Configuration,
 )  # type: ignore[call-arg]
@@ -879,8 +889,8 @@ builder.add_node("adamic_output", adamic_output)
 builder.add_edge(START, "preprocess_input")
 builder.add_conditional_edges("preprocess_input", router_main)
 builder.add_conditional_edges("detect_language", route_to_translation)
-builder.add_edge("adamic_bypass", END)
 builder.add_edge("translate_question", "adamic_input")
+builder.add_edge("adamic_bypass", END)
 builder.add_edge("adamic_input", "adamic_output")
 builder.add_edge("adamic_output", END)
 graph = builder.compile()

@@ -16,7 +16,7 @@ For native terms and concepts that are difficult to translate, use the {detected
 {system_message_content}
 """  # noqa: E501
 adamic_input_user_prompt = """
-Answer the English question, using the {detected_language} question for context, dont write any {detected_language} in the answer, only write English:
+Answer the English question, using the {detected_language} question for context, dont write any {detected_language} in the answer, only write English.
 
 Question in English:
 {question_en}
@@ -44,8 +44,8 @@ Use the example provided as a guide for the translation.
 </RQUREMENTS>
 """  # noqa: E501
 
-adamic_output_user_prompt = """""
-Use the following translation example as a guide on how to translate English to {detected_language} with correct language understanding:
+adamic_output_user_prompt = """
+Use the following translation example as a guide on how to translate English to {detected_language} with correct language understanding.
 
 <USER>
 Translate the following text from English to {detected_language}:

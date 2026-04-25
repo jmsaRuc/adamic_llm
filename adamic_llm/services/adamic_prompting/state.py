@@ -1,11 +1,9 @@
 from langchain_core.messages import AIMessage, AnyMessage, HumanMessage, SystemMessage
 from langgraph.graph import MessagesState
-from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass
-from redis.asyncio import ConnectionPool
 
 
-@dataclass(kw_only=True, config=ConfigDict(arbitrary_types_allowed=True))
+@dataclass(kw_only=True)
 class SummaryState(MessagesState, total=False):
     """
     State class for managing the summary of a conversation.
@@ -14,9 +12,6 @@ class SummaryState(MessagesState, total=False):
     detected language, and answers in both English
     and non-English formats.
     """
-
-    # redis
-    redis_pool: ConnectionPool | None
 
     # Original question in none English and English (if detected)
     human_message: HumanMessage | None
@@ -48,11 +43,3 @@ class SummaryState(MessagesState, total=False):
     # Answer in English and none English (if detected)
     answer_en: AIMessage | None
     answer_none_en: AIMessage | None
-
-
-@dataclass(kw_only=True, config=ConfigDict(arbitrary_types_allowed=True))
-class SummaryStateInput(MessagesState, total=False):
-    """Input State Class."""
-
-    # redis pool
-    redis_pool: ConnectionPool | None

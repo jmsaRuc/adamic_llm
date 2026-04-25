@@ -31,6 +31,7 @@ import time
 from collections.abc import AsyncGenerator
 from typing import Any
 
+from google.cloud.translate_v3 import TranslationServiceAsyncClient
 from langchain_core.messages import AIMessageChunk
 from langchain_core.runnables import RunnableConfig
 from redis.asyncio import ConnectionPool
@@ -67,6 +68,7 @@ async def run_langgraph(
     messages: list[ChatCompletionRequestMessage],
     graph_registry: GraphRegistry,
     redis_pool: ConnectionPool,
+    google_translate_client: TranslationServiceAsyncClient,
 ) -> tuple[str, str, dict[str, int]]:
     """Run a LangGraph model with the given messages using the compiled workflow.
 
@@ -83,7 +85,7 @@ async def run_langgraph(
         messages: A list of messages to process through the LangGraph.
         graph_registry: The GraphRegistry instance containing registered graphs.
         redis_pool: The Redis connection pool for any necessary Redis interactions.
-
+        google_translate_client: The Google Translate client.
     Returns:
         A tuple containing the generated response string
         and a dictionary of token usage information.
@@ -102,7 +104,15 @@ async def run_langgraph(
     # Convert OpenAI messages to LangChain messages
     lc_messages = convert_to_lc_messages(messages)
     # Run the graph with the messages
-    result = await graph.ainvoke({"messages": lc_messages, "redis_pool": redis_pool})
+    conf = RunnableConfig(
+        {
+            "services": {
+                "redis_pool": redis_pool,
+                "google_translate_client": google_translate_client,
+            }
+        }
+    )  # type: ignore
+    result = await graph.ainvoke({"messages": lc_messages}, config=conf)
     response = result["messages"][-1].content if result["messages"] else ""
     name = result["messages"][-1].name if result["messages"] else ""
 

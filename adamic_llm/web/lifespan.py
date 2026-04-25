@@ -7,6 +7,10 @@ from prometheus_fastapi_instrumentator.instrumentation import (
     PrometheusFastApiInstrumentator,
 )
 
+from adamic_llm.services.google_translate.lifespan import (
+    init_google_translate,
+    shutdown_google_translate,
+)
 from adamic_llm.services.redis.lifespan import init_redis, shutdown_redis
 from adamic_llm.settings import settings
 
@@ -51,9 +55,11 @@ async def lifespan_setup(
     app.middleware_stack = None
     await _setup_db(app)
     init_redis(app)
+    init_google_translate(app)
     setup_prometheus(app)
     app.middleware_stack = app.build_middleware_stack()
 
     yield
     await app.state.db_pool.close()
+    await shutdown_google_translate(app)
     await shutdown_redis(app)

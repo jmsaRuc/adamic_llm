@@ -8,6 +8,7 @@ from adamic_llm.services.adamic_prompting.prompts import (
     adamic_output_user_prompt,
 )
 from adamic_llm.services.adamic_prompting.utils import (
+    get_content_from_message,
     get_history_key_lang_from_request_message_history,
     get_lang_name,
 )
@@ -124,10 +125,10 @@ async def get_adamic_history(
                 )
 
             lang_name = await get_lang_name(lang_code)
-
+            message_content = await get_content_from_message(message)
             user_prompt_input = adamic_input_user_prompt.format(
                 question_en=content,
-                question_none_en=message.content,
+                question_none_en=message_content,
                 detected_language=lang_name,
             )
             adamic_input_history.append(HumanMessage(content=user_prompt_input))
@@ -136,7 +137,7 @@ async def get_adamic_history(
 
             user_prompt_output = adamic_output_user_prompt.format(
                 question_en=content,
-                question_none_en=message.content,
+                question_none_en=message_content,
                 detected_language=lang_name,
                 answer_en=next_content,
             )

@@ -1,5 +1,6 @@
 from google.cloud import translate_v2 as translate
 from dotenv import load_dotenv
+from datasets import Dataset
 
 load_dotenv("benchmark.env")
 
@@ -150,6 +151,8 @@ lang_codes = {
     "yo": "Yoruba",
 }
 
+translate_client = translate.Client()
+
 
 def get_translation_google(text: str, dest: str) -> str:
     """Translates text into the target language.
@@ -164,9 +167,7 @@ def get_translation_google(text: str, dest: str) -> str:
         Returns original text if translation fails.
     """
     try:
-        translate_client = (
-            translate.Client()
-        )  # Assumes GOOGLE_APPLICATION_CREDENTIALS is set
+        # Assumes GOOGLE_APPLICATION_CREDENTIALS is set
 
         # The result is a dictionary or list of dictionaries
         result = translate_client.translate(

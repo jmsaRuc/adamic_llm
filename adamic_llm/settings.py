@@ -88,9 +88,6 @@ class Settings(BaseSettings):
     google_project_id: str | None = None
     google_application_credentials: str | None = None
 
-    # bypass
-    bypass: bool = False
-
     @property
     def db_url(self) -> URL:
         """
