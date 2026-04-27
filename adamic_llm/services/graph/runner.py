@@ -117,8 +117,16 @@ async def run_langgraph(
     name = result["messages"][-1].name if result["messages"] else ""
 
     # Calculate token usage (approximate)
-    prompt_tokens = sum(len((m.content or "").split()) for m in messages)
-    completion_tokens = len((response or "").split())
+    prompt_tokens = (
+        result["messages"][-1].usage_metadata.get("input_tokens", 0)
+        if result["messages"]
+        else 0
+    )
+    completion_tokens = (
+        result["messages"][-1].usage_metadata.get("output_tokens", 0)
+        if result["messages"]
+        else 0
+    )
     token_usage = {
         "prompt_tokens": prompt_tokens,
         "completion_tokens": completion_tokens,

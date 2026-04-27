@@ -15,7 +15,10 @@ from dotenv import load_dotenv
 load_dotenv("benchmark.env")
 
 
-client = OpenAI()
+client = OpenAI(
+    base_url=os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1"),
+    api_key=os.getenv("OPENAI_API_KEY"),
+)
 
 client_groq = Groq()
 
@@ -24,7 +27,7 @@ client_groq = Groq()
 def before_retry_fn(retry_state):
     if retry_state.attempt_number > 1:
         print(
-            f"Retrying API call. Attempt #{retry_state.attempt_number}, f{retry_state}"
+            f"Retrying API call. Attempt #{retry_state.attempt_number}, {retry_state}"
         )
 
 
@@ -63,7 +66,27 @@ def get_completion_messages(
             temperature=temperature,
             max_tokens=max_tokens,
         )
-        return response.choices[0].message.content
+        name = (
+            response.choices[0].message.name
+            if hasattr(response.choices[0].message, "name")
+            else None
+        )
+        completion_tokens = (
+            response.usage.completion_tokens
+            if hasattr(response.usage, "completion_tokens")
+            else None
+        )
+        prompt_tokens = (
+            response.usage.prompt_tokens
+            if hasattr(response.usage, "prompt_tokens")
+            else None
+        )
+        return (
+            response.choices[0].message.content,
+            name,
+            completion_tokens,
+            prompt_tokens,
+        )
     elif model_type == "groq":
         response = groq_completion_with_backoff(
             model=model,
@@ -72,7 +95,27 @@ def get_completion_messages(
             max_completion_tokens=max_tokens,
             stream=False,
         )
-        return response.choices[0].message.content
+        name = (
+            response.choices[0].message.name
+            if hasattr(response.choices[0].message, "name")
+            else None
+        )
+        completion_tokens = (
+            response.usage.completion_tokens
+            if hasattr(response.usage, "completion_tokens")
+            else None
+        )
+        prompt_tokens = (
+            response.usage.prompt_tokens
+            if hasattr(response.usage, "prompt_tokens")
+            else None
+        )
+        return (
+            response.choices[0].message.content,
+            name,
+            completion_tokens,
+            prompt_tokens,
+        )
     elif model_type == "together":
         response = query_together_model(
             messages, model=model, max_tokens=max_tokens, temperature=temperature
@@ -103,7 +146,7 @@ def get_completion(
     tokenizer=None,
 ):
     messages = [{"role": "user", "content": prompt}]
-    response = get_completion_messages(
+    response, name_key = get_completion_messages(
         messages,
         model=model,
         temperature=temperature,
@@ -111,7 +154,7 @@ def get_completion(
         model_loaded=model_loaded,
         tokenizer=tokenizer,
     )
-    return response
+    return response, name_key
 
 
 @retry(
@@ -218,7 +261,7 @@ class Agent:
 
     def respond(self, prompt, model=None):
         self.messages.append({"role": "user", "content": prompt})
-        response = get_completion_messages(
+        response, name_key, completion_tokens, prompt_tokens = get_completion_messages(
             self.messages,
             model=self.model if model == None else model,
             temperature=self.temperature,
@@ -227,8 +270,12 @@ class Agent:
             tokenizer=self.tokenizer,
             model_type=self.model_type,
         )
-        self.messages.append({"role": "assistant", "content": response})
-        return response
+        self.messages.append(
+            {"role": "assistant", "content": response, "name": name_key}
+            if name_key
+            else {"role": "assistant", "content": response}
+        )
+        return response, completion_tokens, prompt_tokens
 
     def respond_messages(self, messages, model=None):
         self.messages = messages

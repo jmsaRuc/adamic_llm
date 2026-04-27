@@ -4,7 +4,12 @@ from typing import Literal
 
 from google.api_core.retry_async import AsyncRetry
 from google.cloud.translate_v3 import TranslationServiceAsyncClient
-from langchain_core.messages import AIMessage, AnyMessage, HumanMessage, SystemMessage
+from langchain_core.messages import (
+    AIMessage,
+    AnyMessage,
+    HumanMessage,
+    SystemMessage,
+)
 from langchain_core.runnables import RunnableConfig
 from langchain_groq import ChatGroq
 from langchain_ollama import ChatOllama
@@ -504,7 +509,7 @@ async def translate_question(
 async def adamic_input(
     state: SummaryState,
     config: RunnableConfig,
-) -> dict[str, AIMessage]:
+) -> dict[str, AIMessage | int]:
     """
     Asynchronously translates a Danish question to English using a configured LLM.
 
@@ -513,8 +518,8 @@ async def adamic_input(
         config (RunnableConfig): Configuration specifying the LLM provider
         and related parameters.
     Returns:
-        dict[str, AIMessage]: Updated state with both the original Danish question
-        and its English translation.
+        dict[str, AIMessage | int]: Updated state with both the original Danish question
+        and its English translation, along with token usage information.
     """
     question_en = state["question_en"]
     if not question_en:
@@ -668,6 +673,12 @@ async def adamic_input(
     result = await llm_translate_q.ainvoke(
         input_messages,
     )
+    prompt_tokens = (
+        result.usage_metadata["input_tokens"] if result.usage_metadata else 0
+    )
+    completion_tokens = (
+        result.usage_metadata["output_tokens"] if result.usage_metadata else 0
+    )
 
     content = await get_content_from_message(result)
     if not content:
@@ -675,7 +686,6 @@ async def adamic_input(
         log.warning(
             "The content of the AI message is empty, saving empty string to Redis"
         )
-
     # save the AI message content to Redis list for history with key
     # if dev mode, save to in-memory history instead of Redis
     redis_response_values = RedisListDTO(key=key, value_list=[content])
@@ -713,6 +723,8 @@ async def adamic_input(
 
     return {
         "answer_en": result,
+        "prompt_tokens": prompt_tokens,
+        "completion_tokens": completion_tokens,
     }
 
 
@@ -754,6 +766,13 @@ async def adamic_output(
         if state["detected_language_name"]
         else state["detected_language_code"]
     )
+    prompt_tokens = state["prompt_tokens"]
+    if prompt_tokens is None:
+        raise ValueError("prompt_tokens must not be None for adamic output node")
+
+    completion_tokens = state["completion_tokens"]
+    if completion_tokens is None:
+        raise ValueError("completion_tokens must not be None for adamic output node")
 
     # get history
     message_history = state["message_history"]
@@ -797,9 +816,9 @@ async def adamic_output(
     if configurable.llm_provider == "groq":
         llm_translate_q = ChatGroq(
             model=configurable.groq_llm,
-            temperature=0.4,
+            temperature=0.0,
             max_tokens=8192,
-            model_kwargs={"top_p": 0.95},
+            model_kwargs={"top_p": 1.0},
             timeout=120,
             max_retries=5,
         )
@@ -839,6 +858,13 @@ async def adamic_output(
         output_messages,
     )
 
+    prompt_tokens_new = (
+        result.usage_metadata["input_tokens"] if result.usage_metadata else 0
+    ) + prompt_tokens
+    completion_tokens_new = (
+        result.usage_metadata["output_tokens"] if result.usage_metadata else 0
+    ) + completion_tokens
+
     # save message content to redis list with key
     content = await get_content_from_message(result)
     if not content:
@@ -854,6 +880,15 @@ async def adamic_output(
         raise ValueError("state.answer_en must not be None for adamic output node")
 
     old_ai_answer_en.content = content
+
+    # insert compiled token usage into the content of the AI message for later retrieval
+    if not old_ai_answer_en.usage_metadata:
+        raise ValueError(
+            "usage_metadata must not be None for state.answer_en AI message"
+            " in adamic output node to insert token usage information"
+        )
+    old_ai_answer_en.usage_metadata["input_tokens"] = prompt_tokens_new
+    old_ai_answer_en.usage_metadata["output_tokens"] = completion_tokens_new
 
     # insert name with key into the AI message
     lang_code = state["detected_language_code"]

@@ -1,4 +1,4 @@
-num_samples=1
+num_samples=10
 results_folder=results
 overwrite=1
 do_inference=1
@@ -8,12 +8,13 @@ script=run_nlp_tasks.py
 
 # model=meta-llama/Llama-2-7b-chat-hf
 model=openai/gpt-oss-120b
+#model=adamic_graph
 model_type=groq
 model_judge=anthropic/claude-opus-4.6
 
 lang_list=all
-prompt_type_list=direct
-task_list="global_mmlu"
+prompt_type_list=google_direct
+task_list=all
 
 gpu=1,2
 

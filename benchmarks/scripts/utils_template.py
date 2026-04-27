@@ -679,7 +679,7 @@ def gen_prompt(args, item):
                 + '\nYou should format your final answer as "Answer: <Arabic numeral>".'
             )
             prompt = template.format(Q=item["Q"])
-        elif args.prompt_type == "direct_native":
+        elif args.prompt_type == "direct_native" or args.prompt_type == "adamic":
             template = dic_template_basic[args.task][args.lang]
             output_format = f'{dic_tempalte_format["general"][args.lang]}"{dic_answer_word[args.lang]}: <{dic_tempalte_format["mgsm"][args.lang]}>".'
             template = template + "\n" + output_format
@@ -746,7 +746,7 @@ def gen_prompt(args, item):
                 choice1=item["choice1"],
                 choice2=item["choice2"],
             )
-        elif args.prompt_type == "direct_native":
+        elif args.prompt_type == "direct_native" or args.prompt_type == "adamic":
             template = dic_template_basic[args.task][args.lang]
             output_format = f'{dic_tempalte_format["general"][args.lang]}"{dic_answer_word[args.lang]}: <{dic_tempalte_format["xcopa"][args.lang]}>".'
             template = template + "\n" + output_format
@@ -807,7 +807,7 @@ def gen_prompt(args, item):
             prompt = template.format(
                 premise=item["premise"], hypothesis=item["hypothesis"]
             )
-        elif args.prompt_type == "direct_native":
+        elif args.prompt_type == "direct_native" or args.prompt_type == "adamic":
             template = dic_template_basic[args.task][args.lang]
             output_format = f'{dic_tempalte_format["general"][args.lang]}"{dic_answer_word[args.lang]}: <{dic_tempalte_format["xnli"][args.lang]}>".'
             template = template + "\n" + output_format
@@ -868,7 +868,7 @@ def gen_prompt(args, item):
             prompt = template.format(
                 sentence1=item["sentence1"], sentence2=item["sentence2"]
             )
-        elif args.prompt_type == "direct_native":
+        elif args.prompt_type == "direct_native" or args.prompt_type == "adamic":
             template = dic_template_basic[args.task][args.lang]
             output_format = f'{dic_tempalte_format["general"][args.lang]}"{dic_answer_word[args.lang]}: <{dic_tempalte_format["paws-x"][args.lang]}>".'
             template = template + "\n" + output_format
@@ -915,7 +915,7 @@ def gen_prompt(args, item):
             template = "{question}?"
             template += ' You should format your final answer in one or a few words as "Answer:".'
             prompt = template.format(question=item["question"])
-        elif args.prompt_type == "direct_native":
+        elif args.prompt_type == "direct_native" or args.prompt_type == "adamic":
             template = dic_template_basic[args.task][args.lang]
             output_format = f'{dic_tempalte_format["general"][args.lang]}"{dic_answer_word[args.lang]}:".'
             template = template + "\n" + output_format
@@ -957,7 +957,7 @@ def gen_prompt(args, item):
                 ' You should format your final summary in one sentence as "Answer:".'
             )
             prompt = template.format(article=item["text"])
-        elif args.prompt_type == "direct_native":
+        elif args.prompt_type == "direct_native" or args.prompt_type == "adamic":
             template = dic_template_basic[args.task][args.lang]
             output_format = f'{dic_tempalte_format["xlsum"][args.lang]}"{dic_answer_word[args.lang]}:".'
             template = template + "\n" + output_format
@@ -1001,7 +1001,7 @@ def gen_prompt(args, item):
                 option_c=item["C"],
                 option_d=item["D"],
             )
-        elif args.prompt_type == "direct_native":
+        elif args.prompt_type == "direct_native" or args.prompt_type == "adamic":
             template = dic_template_basic[args.task][args.lang]
             output_format = f'{dic_tempalte_format["general"][args.lang]} "{dic_answer_word[args.lang]}: <$LETTER>" LETTER {dic_tempalte_format["mmmlu"][args.lang]} A/B/C/D.'
             template = template + "\n" + output_format
@@ -1036,7 +1036,7 @@ def gen_prompt(args, item):
                 option_c=item["option_c"],
                 option_d=item["option_d"],
             )
-        elif args.prompt_type == "direct_native":
+        elif args.prompt_type == "direct_native" or args.prompt_type == "adamic":
             template = dic_template_basic[args.task][args.lang]
             output_format = f'{dic_tempalte_format["general"][args.lang]} "{dic_answer_word[args.lang]}: <$LETTER>" LETTER {dic_tempalte_format["global_mmlu"][args.lang]} A/B/C/D.'
             template = template + "\n" + output_format
@@ -1063,7 +1063,11 @@ def gen_prompt(args, item):
 
 
 def get_prompt_ans(args):
-    if args.prompt_type == "direct_native" or args.prompt_type == "native_cot":
+    if (
+        args.prompt_type == "direct_native"
+        or args.prompt_type == "native_cot"
+        or args.prompt_type == "adamic"
+    ):
         prompt_for_ans = dic_tempalte_round2[args.task][args.lang]
     elif args.prompt_type == "xlt":
         prompt_for_ans = "Therefore, the answer is"
@@ -1108,7 +1112,9 @@ def clean_ans(args, pred_str):
         return clean_ans_xlt(args, pred_str)
     answer_word = (
         dic_answer_word[args.lang]
-        if args.prompt_type == "direct_native" or args.prompt_type == "native_cot"
+        if args.prompt_type == "direct_native"
+        or args.prompt_type == "native_cot"
+        or args.prompt_type == "adamic"
         else dic_answer_word["en"]
     )
     if args.task == "mgsm" or args.task == "xcopa":
@@ -1130,7 +1136,7 @@ def clean_ans(args, pred_str):
     elif args.task == "xnli":
         # 1:Yes, 2:No, 3:Maybe?",
         # pattern1 = 'Answer: (Yes|No|Maybe)'
-        if args.prompt_type in ["direct_native", "native_cot"]:
+        if args.prompt_type in ["direct_native", "native_cot", "adamic"]:
             pattern1 = f"{answer_word}:\s*(\d)"
             pred1 = re.findall(pattern1, pred_str)
             pattern = "(\d)"
@@ -1174,7 +1180,7 @@ def clean_ans(args, pred_str):
                 )
 
     elif args.task == "paws-x":
-        if args.prompt_type in ["direct_native", "native_cot"]:
+        if args.prompt_type in ["direct_native", "native_cot", "adamic"]:
             pattern1 = f"{answer_word}:\s*(\d)"
             pred1 = re.findall(pattern1, pred_str)
             pattern = "(\d)"
@@ -1225,7 +1231,7 @@ def clean_ans(args, pred_str):
             pred_str = get_translation_google(pred_str, dest=args.lang)
         return pred_str
     elif args.task == "mmmlu" or args.task == "global_mmlu":
-        if args.prompt_type in ["direct_native"]:
+        if args.prompt_type in ["direct_native", "adamic"]:
             pattern1 = f"{answer_word}:\s*([A-D])"
             pred1 = re.findall(pattern1, pred_str)
             pattern = "([A-D])"
@@ -1365,7 +1371,9 @@ def check_ans(args, pred):
         return False
     answer_word = (
         dic_answer_word[args.lang]
-        if args.prompt_type == "direct_native" or args.prompt_type == "native_cot"
+        if args.prompt_type == "direct_native"
+        or args.prompt_type == "native_cot"
+        or args.prompt_type == "adamic"
         else dic_answer_word["en"]
     )
     if (

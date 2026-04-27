@@ -160,18 +160,24 @@ def inference(args):
         prompt = gen_prompt(args, item)
         item["prompt"] = prompt
 
-        res1 = agent_base.respond(prompt)
+        res1, completion_tokens, prompt_tokens = agent_base.respond(prompt)
         if check_ans(args, res1):
             ans = clean_ans(args, res1)
         else:
             print("invalid answer format, trying again")
-            ans = agent_base.respond(prompt_for_ans)
-            ans = clean_ans(args, ans)
+            res2, completion_tokens2, prompt_tokens2 = agent_base.respond(
+                prompt_for_ans
+            )
+            completion_tokens += completion_tokens2
+            prompt_tokens += prompt_tokens2
+            ans = clean_ans(args, res2)
 
         item["pred"] = ans
         item["check"] = evaluate_item(args, item)
         item["model"] = args.model
         item["message"] = agent_base.messages
+        item["completion_tokens"] = completion_tokens
+        item["prompt_tokens"] = prompt_tokens
 
         print(f"pred: {ans} {item['check']}")
 
@@ -200,6 +206,8 @@ def post_process(args):
     list_pred = []
     list_check = []
     list_metadata = []
+    list_completion_tokens = []
+    list_prompt_tokens = []
     for idx in tqdm(list_idx):
         file_path = os.path.join(output_folder, f"{idx}.json")
         with open(file_path, "r") as f:
@@ -211,6 +219,8 @@ def post_process(args):
             response = item["message"][-1]["content"]
             item["pred"] = clean_ans(args, response)
             item["check"] = evaluate_item(args, item)
+            item["completion_tokens"] = item.get("completion_tokens", 0)
+            item["prompt_tokens"] = item.get("prompt_tokens", 0)
 
             with open(file_path, "w") as f:
                 json.dump(item, f, indent=2, ensure_ascii=False)
@@ -223,6 +233,8 @@ def post_process(args):
                 list_metadata.append(item["cultural_sensitivity_label"])
             else:
                 list_metadata.append("not_annotated")
+        list_completion_tokens.append(item["completion_tokens"])
+        list_prompt_tokens.append(item["prompt_tokens"])
 
     if args.task == "global_mmlu":
         df = pd.DataFrame(
@@ -232,11 +244,20 @@ def post_process(args):
                 "pred": list_pred,
                 "check": list_check,
                 "metadata": list_metadata,
+                "completion_tokens": list_completion_tokens,
+                "prompt_tokens": list_prompt_tokens,
             }
         )
     else:
         df = pd.DataFrame(
-            {"Q": list_Q, "A": list_A, "pred": list_pred, "check": list_check}
+            {
+                "Q": list_Q,
+                "A": list_A,
+                "pred": list_pred,
+                "check": list_check,
+                "completion_tokens": list_completion_tokens,
+                "prompt_tokens": list_prompt_tokens,
+            }
         )
     df.to_csv(f"{output_folder}/summary.csv", index=False)
 
@@ -279,6 +300,10 @@ def post_process(args):
         f.write(
             f"{args.model},{args.prompt_type},{args.lang},{num_samples},{np.mean(list_check)}\n"
         )
+    with open(f"{args.results_folder}/tokens_{args.task}.csv", "a") as f:
+        f.write(
+            f"{args.model},{args.prompt_type},{args.lang},{num_samples},{np.sum(list_prompt_tokens)},{np.sum(list_completion_tokens)}\n"
+        )
 
 
 def process_lang(args, llm, sampling_params, tokenizer):
@@ -305,12 +330,12 @@ def main():
         model_name_or_path=args.model, metrics=["rouge1", "rougeL"]
     )
     tasks = (
-        ["mgsm", "xcopa", "xnli", "paws-x", "mkqa", "xlsum"]
+        ["global_mmlu", "mmmlu", "xnli", "paws-x", "mkqa", "xlsum"]
         if args.task_list == "all"
         else args.task_list.split(",")
     )
     prompt_types = (
-        ["direct", "direct_native", "native_cot", "xlt", "en_cot", "google", "nllb"]
+        ["direct", "direct_native", "google_direct", "adamic"]
         if args.prompt_type_list == "all"
         else args.prompt_type_list.split(",")
     )
@@ -320,6 +345,8 @@ def main():
         for prompt_type in prompt_types:
             args.task = task
             args.prompt_type = prompt_type
+            if prompt_type == "adamic":
+                args.model_type = "openai"
             langs = (
                 dic_list_langs[args.task]
                 if args.lang_list == "all"

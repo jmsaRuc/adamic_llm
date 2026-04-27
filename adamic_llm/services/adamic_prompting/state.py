@@ -43,3 +43,7 @@ class SummaryState(MessagesState, total=False):
     # Answer in English and none English (if detected)
     answer_en: AIMessage | None
     answer_none_en: AIMessage | None
+
+    # usage
+    prompt_tokens: int | None
+    completion_tokens: int | None
