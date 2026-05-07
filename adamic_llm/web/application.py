@@ -31,38 +31,58 @@ def get_app() -> FastAPI:
         redoc_url=None,
         openapi_url="/api/openapi.json",
     )
-    adamic_graph_with_config = adamic_graph.with_config(
+    adamic_graph_with_config_gpt_oss = adamic_graph.with_config(
         configurable={
-            "llm_provider": settings.llm_provider,
-            "groq_llm": settings.groq_llm,
-            "groq_api_base": settings.groq_api_base,
+            "llm_provider": "groq",
+            "groq_llm": "openai/gpt-oss-120b",
+            "groq_api_base": "https://api.groq.com/",
             "google_project_id": settings.google_project_id,
             "google_application_credentials": settings.google_application_credentials,
             "mode": "adamic",
         }
     )
-    adamic_graph_with_config_bypass = adamic_graph.with_config(
+
+    adamic_graph_with_config_llama4 = adamic_graph.with_config(
         configurable={
-            "llm_provider": settings.llm_provider,
-            "groq_llm": settings.groq_llm,
-            "groq_api_base": settings.groq_api_base,
+            "llm_provider": "groq",
+            "groq_llm": "meta-llama/llama-4-scout-17b-16e-instruct",
+            "groq_api_base": "https://api.groq.com/",
             "google_project_id": settings.google_project_id,
             "google_application_credentials": settings.google_application_credentials,
-            "mode": "direct",
+            "mode": "adamic",
         }
     )
-
+    adamic_graph_with_config_opus = adamic_graph.with_config(
+        configurable={
+            "llm_provider": "open-router",
+            "open_router_llm": "anthropic/claude-opus-4.7",
+            "open_router_api_base": "https://openrouter.ai/api/v1",
+            "open_router_api_key": settings.openrouter_api_key,
+            "google_project_id": settings.google_project_id,
+            "google_application_credentials": settings.google_application_credentials,
+            "mode": "adamic",
+        }
+    )
     os.environ["GROQ_API_KEY"] = settings.groq_api_key or ""
+    if not settings.openrouter_api_key:
+        raise ValueError(
+            "OpenRouter API key is not set. Please set it in the environment variables."
+        )
 
     # Initialize the GraphRegistry and register the Adamic graph
     graph_registry = GraphRegistry(
         registry={
-            "adamic_graph": GraphConfig(
-                graph=adamic_graph_with_config, streamable_node_names=["adamic_output"]
+            "adamic_graph/gpt-oss-120b": GraphConfig(
+                graph=adamic_graph_with_config_gpt_oss,
+                streamable_node_names=["adamic_output"],
             ),
-            "adamic_graph_basic": GraphConfig(
-                graph=adamic_graph_with_config_bypass,
-                streamable_node_names=["adamic_bypass"],
+            "adamic_graph/llama-4-scout-17b-16e-instruct": GraphConfig(
+                graph=adamic_graph_with_config_llama4,
+                streamable_node_names=["adamic_output"],
+            ),
+            "adamic_graph/claude-opus-4.7": GraphConfig(
+                graph=adamic_graph_with_config_opus,
+                streamable_node_names=["adamic_output"],
             ),
         }
     )

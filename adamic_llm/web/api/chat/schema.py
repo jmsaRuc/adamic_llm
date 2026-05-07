@@ -92,7 +92,7 @@ class ChatCompletionRequest(BaseModel):
     n: int | None = 1
     stream: bool | None = False
     stop: str | list[str] | None = None
-    max_tokens: int | None = 8192
+    max_tokens: int = 8192
     presence_penalty: float | None = 0.0
     frequency_penalty: float | None = 0.0
     logit_bias: dict[str, float] | None = None

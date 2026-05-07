@@ -34,7 +34,10 @@ def get_args():
         "--model", type=str, default="gpt-3.5-turbo-1106", help="model name"
     )
     parser.add_argument(
-        "--model_type", type=str, default="default", help="[default, openai, groq]"
+        "--model_type",
+        type=str,
+        default="default",
+        help="[default, openai, groq, open-router]",
     )
     parser.add_argument(
         "--model_judge", type=str, default="gpt-3.5-turbo-1106", help="judge model name"
@@ -43,8 +46,14 @@ def get_args():
         "--prompt_type",
         type=str,
         default="direct",
-        choices=["direct", "en_cot", "google", "nllb"],
+        choices=["direct", "google", "adamic"],
         help="prompt type",
+    )
+    parser.add_argument(
+        "--max_tokens",
+        type=int,
+        default=8192,
+        help="max tokens for generation, only used for vllm and groq",
     )
     parser.add_argument("--lang", type=str, default="zh", help="language code")
     parser.add_argument(
@@ -147,7 +156,7 @@ def get_agent(args):
         "",
         model=args.model,
         temperature=0,
-        max_tokens=8192,
+        max_tokens=args.max_tokens,
         model_loaded=model_loaded,
         tokenizer=tokenizer,
         model_type=args.model_type,
@@ -173,6 +182,8 @@ def inference(args):
     agent_base = get_agent(args)
 
     for idx in list_idx:
+        max_tokens = args.max_tokens
+        agent_base.change_max_tokens(max_tokens)
         agent_base.reset()
         item = ds[idx]
         file_path = os.path.join(output_folder, f"{idx}.json")
@@ -190,11 +201,39 @@ def inference(args):
         print(prompt)
         print("-" * 20)
 
-        res1 = agent_base.respond(prompt)
+        res1, completion_tokens, prompt_tokens = agent_base.respond(prompt)
+        if res1 is None or len(res1.strip()) == 0:
+            print(
+                "Warning: the response is empty, trying again with higher max_tokens..."
+            )
+            agent_base.reset()
+            agent_base.change_max_tokens(max_tokens * 2)
+            res1, completion_tokens, prompt_tokens = agent_base.respond(prompt)
+            if res1 is None or len(res1.strip()) == 0:
+                print(
+                    "Warning: the response is still empty after retrying with higher max_tokens, trying again with even higher max_tokens..."
+                )
+                agent_base.reset()
+                agent_base.change_max_tokens(max_tokens * 4)
+                res1, completion_tokens, prompt_tokens = agent_base.respond(prompt)
+                if res1 is None or len(res1.strip()) == 0:
+                    print(
+                        "Warning: the response is still empty after retrying with higher max_tokens, trying again with even higher max_tokens..."
+                    )
+                    agent_base.reset()
+                    agent_base.change_max_tokens(max_tokens * 8)
+                    res1, completion_tokens, prompt_tokens = agent_base.respond(prompt)
+                    if res1 is None or len(res1.strip()) == 0:
+                        print(
+                            "Error: the response is still empty after retrying with higher max_tokens for 4 times, saving empty string as response."
+                        )
+                        res1 = ""
 
         item["pred"] = clean_ans(args, res1)
         item["model"] = args.model
         item["agent_base"] = agent_base.messages
+        item["prompt_tokens"] = prompt_tokens
+        item["completion_tokens"] = completion_tokens
 
         print(f"pred: {res1}")
 
@@ -214,6 +253,10 @@ def post_process(args):
     list_Q = []
     list_pred = []
     list_check = []
+    list_completion_tokens = []
+    list_prompt_tokens = []
+    list_judge_completion_tokens = []
+    list_judge_prompt_tokens = []
     for idx in tqdm(list_idx):
         # agent_judge.reset()
         file_path = os.path.join(output_folder, f"{idx}.json")
@@ -232,19 +275,35 @@ def post_process(args):
             else:
                 prompt_judge = gen_prompt_judge(item["question"], item["pred"])
             message = prompt_to_messages("user", prompt_judge, [])
-            res_judge = query_openrouter_model(
-                message, args.model_judge, max_tokens=1024
+            res_judge, completion_tokens, prompt_tokens = query_openrouter_model(
+                message, args.model_judge, max_tokens=args.max_tokens
             )
             item["model_judge"] = args.model_judge
             item["prompt_judge"] = prompt_judge
             item["judgement"] = res_judge
             item["rating"] = clean_judge(res_judge)
+            item["judge_completion_tokens"] = completion_tokens
+            item["judge_prompt_tokens"] = prompt_tokens
             # save the updated item
             with open(judge_path, "w") as f:
                 json.dump(item, f, indent=2, ensure_ascii=False)
         list_check.append(item["rating"])
+        list_completion_tokens.append(item.get("completion_tokens", 0))
+        list_prompt_tokens.append(item.get("prompt_tokens", 0))
+        list_judge_completion_tokens.append(item.get("judge_completion_tokens", 0))
+        list_judge_prompt_tokens.append(item.get("judge_prompt_tokens", 0))
 
-    df = pd.DataFrame({"Q": list_Q, "pred": list_pred, "rating": list_check})
+    df = pd.DataFrame(
+        {
+            "Q": list_Q,
+            "pred": list_pred,
+            "rating": list_check,
+            "completion_tokens": list_completion_tokens,
+            "prompt_tokens": list_prompt_tokens,
+            "judge_completion_tokens": list_judge_completion_tokens,
+            "judge_prompt_tokens": list_judge_prompt_tokens,
+        }
+    )
     df.to_csv(f"{judge_folder}/summary.csv", index=False)
     # check number of ratings that is equal to -1
     num_invalid = len([x for x in list_check if x == -1])
@@ -267,6 +326,10 @@ def post_process(args):
         f.write(
             f"{args.model},{args.model_judge},{args.prompt_type},{args.lang},{num_samples},{np.mean(list_check)}\n"
         )
+    with open(f"{args.results_folder}/tokens_{args.task}.csv", "a") as f:
+        f.write(
+            f"{args.model},{args.prompt_type},{args.lang},{num_samples},{np.sum(list_prompt_tokens)},{np.sum(list_completion_tokens)},{np.sum(list_judge_prompt_tokens)},{np.sum(list_judge_completion_tokens)}\n"
+        )
 
 
 def process_lang(args, llm, sampling_params, tokenizer):
@@ -287,7 +350,7 @@ def main():
     )
     tasks = ["shareGPT"] if args.task_list == "all" else args.task_list.split(",")
     prompt_types = (
-        ["direct", "google"]
+        ["direct", "google", "adamic"]
         if args.prompt_type_list == "all"
         else args.prompt_type_list.split(",")
     )
@@ -297,6 +360,8 @@ def main():
         for prompt_type in prompt_types:
             args.task = task
             args.prompt_type = prompt_type
+            if prompt_type == "adamic":
+                args.model_type = "openai"
             langs = (
                 dic_list_langs[args.task]
                 if args.lang_list == "all"

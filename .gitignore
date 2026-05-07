@@ -155,4 +155,6 @@ cython_debug/
 
 #Benchmarks
 benchmarks/results
-benchmarks/results/
+benchmarks/results/*
+benchmarks/results2
+benchmarks/results2/*

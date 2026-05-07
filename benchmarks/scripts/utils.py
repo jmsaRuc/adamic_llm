@@ -7,7 +7,8 @@ from tenacity import (
     wait_fixed,
     wait_random,
 )
-from groq import Groq
+import groq
+from openrouter import OpenRouter
 import requests
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -20,7 +21,11 @@ client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY"),
 )
 
-client_groq = Groq()
+client_groq = groq.Groq()
+
+client_openrouter = OpenRouter(
+    api_key=os.getenv("OPENROUTER_API_KEY"),
+)
 
 
 # These are the basic functions to call ChatGPT
@@ -33,11 +38,30 @@ def before_retry_fn(retry_state):
 
 @retry(
     wait=wait_fixed(5) + wait_random(0, 5),
-    stop=stop_after_attempt(6),
+    stop=stop_after_attempt(1),
     before=before_retry_fn,
 )
 def groq_completion_with_backoff(**kwargs):
-    return client_groq.chat.completions.create(**kwargs)
+    try:
+        response = client_groq.chat.completions.create(**kwargs)
+
+    except groq.BadRequestError as e:
+        if "tool_use_failed" in str(e):
+            kwargs["messages"][-1]["content"] += "\n[WARNING]\nDONT USE ANY TOOLS"
+            response2 = client_groq.chat.completions.create(**kwargs)
+            return response2
+        else:
+            raise groq.BadRequestError(f"GROQ API call failed: {e}")
+    return response
+
+
+@retry(
+    wait=wait_fixed(5) + wait_random(0, 5),
+    stop=stop_after_attempt(1),
+    before=before_retry_fn,
+)
+def openrouter_completion_with_backoff(**kwargs):
+    return client_openrouter.chat.send(**kwargs)
 
 
 @retry(
@@ -53,7 +77,7 @@ def get_completion_messages(
     messages,
     model="gpt-3.5-turbo-1106",
     temperature=0,
-    max_tokens=1024,
+    max_tokens=8192,
     model_loaded=None,
     tokenizer=None,
     model_type="openai",
@@ -94,6 +118,39 @@ def get_completion_messages(
             temperature=temperature,
             max_completion_tokens=max_tokens,
             stream=False,
+            tools=None,
+            tool_choice="none",
+            disable_tool_validation=True,
+            reasoning_effort="high" if "gpt-oss" in model else None,
+        )
+        name = (
+            response.choices[0].message.name
+            if hasattr(response.choices[0].message, "name")
+            else None
+        )
+        completion_tokens = (
+            response.usage.completion_tokens
+            if hasattr(response.usage, "completion_tokens")
+            else None
+        )
+        prompt_tokens = (
+            response.usage.prompt_tokens
+            if hasattr(response.usage, "prompt_tokens")
+            else None
+        )
+        return (
+            response.choices[0].message.content,
+            name,
+            completion_tokens,
+            prompt_tokens,
+        )
+    elif model_type == "open-router":
+        response = openrouter_completion_with_backoff(
+            model=model,
+            messages=messages,
+            temperature=temperature,
+            max_completion_tokens=max_tokens,
+            reasoning={"effort": "xhigh"},
         )
         name = (
             response.choices[0].message.name
@@ -141,7 +198,7 @@ def get_completion(
     prompt,
     model="gpt-3.5-turbo",
     temperature=0,
-    max_tokens=1024,
+    max_tokens=8192,
     model_loaded=None,
     tokenizer=None,
 ):
@@ -203,7 +260,7 @@ def query_together_model(
     before=before_retry_fn,
 )
 def query_openrouter_model(
-    messages, model="openai/gpt-4o-mini", max_tokens=64, temperature=0
+    messages, model="openai/gpt-4o-mini", max_tokens=8192, temperature=0
 ):
 
     client = OpenAI(
@@ -219,14 +276,18 @@ def query_openrouter_model(
             n=1,
             stop=None,
             temperature=temperature,
+            reasoning_effort="xhigh",
         )
         output = completions.choices[0].message.content.strip()
-
+        completion_tokens = completions.usage.completion_tokens
+        prompt_tokens = completions.usage.prompt_tokens
     except Exception as e:
         print("[ERROR]", e)
         output = "CAUTION: Problematic output!"
+        completion_tokens = 0
+        prompt_tokens = 0
 
-    return output
+    return output, completion_tokens, prompt_tokens
 
 
 def parallel_query_chatgpt_model(args):
@@ -240,7 +301,7 @@ class Agent:
         system_prompt="",
         model="gpt-3.5-turbo-1106",
         temperature=0,
-        max_tokens=1024,
+        max_tokens=8192,
         model_loaded=None,
         tokenizer=None,
         model_type="openai",
@@ -290,6 +351,9 @@ class Agent:
         )
         self.messages.append({"role": "assistant", "content": response})
         return response
+
+    def change_max_tokens(self, max_tokens):
+        self.max_tokens = max_tokens
 
     def reset(self):
         self.messages = (
@@ -379,7 +443,7 @@ def _test_completion():
         "Qustion: what is 10 * 5 -4?\n Answer: Let's think step by step.",
         model=model,
         temperature=0,
-        max_tokens=1024,
+        max_tokens=8192,
         model_loaded=model_loaded,
         tokenizer=tokenizer,
     )

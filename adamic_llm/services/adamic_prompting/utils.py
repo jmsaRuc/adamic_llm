@@ -3,6 +3,7 @@ import uuid
 from typing import Any
 
 import pycountry
+from google.cloud.translate_v3 import TranslationServiceAsyncClient
 from langchain_core.messages import AIMessage, AnyMessage, HumanMessage, SystemMessage
 
 from adamic_llm.services.adamic_prompting.state import SummaryState
@@ -92,25 +93,66 @@ async def format_sources(search_results: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-async def get_lang_name(country_code: str) -> str:
+async def get_lang_name(country_code: str) -> str | None:
     """
     Get the native name of a language based on its ISO 639-1 country code.
 
     Args:
         country_code (str): The ISO 639-1 country code for the language.
     Returns:
-        str: The native name of the language corresponding to the provided country code.
+        str | None:
+            The native name of the language corresponding to the provided country code,
+            or None if the language is not found.
     """
-
     language = pycountry.languages.get(alpha_2=country_code)
     if language is None:
         log.warning(
             f"Language with country code '{country_code}'"
             " not found. Returning country code as fallback."
         )
-        return country_code
+        return None
 
     return language.name
+
+
+async def get_lang_name_from_google_cloud(
+    country_code: str,
+    parent: str,
+    google_translate_client: TranslationServiceAsyncClient,
+) -> str:
+    """
+    Get the native name of a language based on its ISO 639-1 country code.
+
+    Args:
+        country_code (str): The ISO 639-1 country code for the language.
+        parent (str):
+            The parent resource name in the format
+            "projects/{project_id}/locations/global".
+        google_translate_client (TranslationServiceAsyncClient):
+            An instance of the Google Translate client.
+
+    Returns:
+        str: The native name of the language corresponding to the provided country code,
+             or the country code itself if the language is not found or an error occurs.
+    """
+    try:
+        response = await google_translate_client.get_supported_languages(
+            display_language_code=country_code, parent=parent
+        )
+        for language in response.languages:
+            if language.language_code == country_code:
+                return language.display_name
+        log.warning(
+            f"Language with country code '{country_code}' not found in Google Cloud."
+            " Returning country code as fallback."
+        )
+        return country_code
+    except Exception as e:
+        log.error(
+            f"Error retrieving supported languages from Google Cloud: {e}"
+            " Returning country code as fallback."
+        )
+        return country_code
 
 
 async def get_latest_human_message(state: SummaryState) -> HumanMessage | None:

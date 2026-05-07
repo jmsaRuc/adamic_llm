@@ -88,6 +88,9 @@ class Settings(BaseSettings):
     google_project_id: str | None = None
     google_application_credentials: str | None = None
 
+    # open router
+    openrouter_api_key: str | None = None
+
     @property
     def db_url(self) -> URL:
         """

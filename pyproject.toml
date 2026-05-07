@@ -31,6 +31,7 @@ dependencies = [
   "pycountry>=26.2.16",
   "google-cloud-translate>=3.25.0",
   "langchain>=1.2.15",
+  "langchain-openrouter>=0.2.1",
 ]
 
 [dependency-groups]

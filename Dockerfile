@@ -1,10 +1,10 @@
-FROM ghcr.io/astral-sh/uv:0.9.12-bookworm AS uv
+FROM ghcr.io/astral-sh/uv:0.11-python3.13-trixie-slim AS uv
 
 # -----------------------------------
 # STAGE 1: prod stage
 # Only install main dependencies
 # -----------------------------------
-FROM python:3.13-slim-bookworm AS prod
+FROM python:3.13-slim-trixie AS prod
 RUN apt-get update && apt-get install -y \
   gcc \
   && rm -rf /var/lib/apt/lists/*

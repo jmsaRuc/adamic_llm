@@ -61,6 +61,7 @@ class ChatCompletionService:
         # Get the completion from the LangGraph model
         completion, name, tokens_used = await run_langgraph(
             model=chat_request.model,
+            max_tokens=chat_request.max_tokens,
             messages=chat_request.messages,
             graph_registry=graph_registry,
             redis_pool=redis_pool,

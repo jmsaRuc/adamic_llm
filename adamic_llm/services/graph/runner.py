@@ -65,6 +65,7 @@ def register_graphs(graphs: dict[str, Any]) -> dict[str, Any]:
 
 async def run_langgraph(
     model: str,
+    max_tokens: int,
     messages: list[ChatCompletionRequestMessage],
     graph_registry: GraphRegistry,
     redis_pool: ConnectionPool,
@@ -82,6 +83,7 @@ async def run_langgraph(
 
     Args:
         model: The name of the model to use, which also determines which graph to use.
+        max_tokens: The maximum number of tokens to generate.
         messages: A list of messages to process through the LangGraph.
         graph_registry: The GraphRegistry instance containing registered graphs.
         redis_pool: The Redis connection pool for any necessary Redis interactions.
@@ -109,7 +111,10 @@ async def run_langgraph(
             "services": {
                 "redis_pool": redis_pool,
                 "google_translate_client": google_translate_client,
-            }
+            },
+            "request_config": {
+                "max_tokens": max_tokens,
+            },
         }
     )  # type: ignore
     result = await graph.ainvoke({"messages": lc_messages}, config=conf)

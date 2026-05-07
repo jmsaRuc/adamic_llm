@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Any, Literal
 
 from langchain_core.runnables import RunnableConfig
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr
 
 
 class SearchAPI(Enum):
@@ -38,15 +38,29 @@ class Configuration(BaseModel):
         title="OpenAI LLM Model Name",
         description="Name of the OpenAI LLM model to use",
     )
-    llm_provider: Literal["ollama", "groq", "openai"] = Field(
+    open_router_llm: str = Field(
+        default="o3-mini",
+        title="OpenRouter LLM Model Name",
+        description="Name of the OpenRouter LLM model to use",
+    )
+    llm_provider: Literal["ollama", "groq", "openai", "open-router"] = Field(
         default="groq",
         title="LLM Provider",
-        description="Provider for the LLM (Ollama or LMStudio)",
+        description="Provider for the LLM (Ollama, GROQ, OpenAI, or OpenRouter)",
     )
     groq_api_base: str = Field(
         default="https://api.groq.com/",
         title="GROQ API Base URL",
         description="Base URL for the GROQ API",
+    )
+    open_router_api_base: str = Field(
+        default="https://openrouter.ai/",
+        title="OpenRouter API Base URL",
+        description="Base URL for the OpenRouter API",
+    )
+    open_router_api_key: SecretStr = Field(
+        title="OpenRouter API Key",
+        description="API key for the OpenRouter API",
     )
     ollama_base_url: str = Field(
         default="http://localhost:11434/",

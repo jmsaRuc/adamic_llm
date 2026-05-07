@@ -32,6 +32,9 @@ dic_answer_word = {
     "fr": "Réponse",
     "ko": "대답",
     "ru": "Ответ",
+    "ro": "Răspuns",
+    "uk": "Відповідь",
+    "no": "Svar",
     "pt": "Resposta",
     "he": "תְשׁוּבָה",
     "ne": "जवाफ",
@@ -1263,7 +1266,7 @@ def clean_ans(args, pred_str):
         or args.task == "wildchat"
         or args.task == "shareGPT_filter"
     ):
-        if args.prompt_type == "direct":
+        if args.prompt_type == "direct" or args.prompt_type == "adamic":
             pred_str = pred_str
         elif args.prompt_type == "google" or args.prompt_type == "google_direct":
             pred_str = get_translation_google(pred_str, dest=args.lang)

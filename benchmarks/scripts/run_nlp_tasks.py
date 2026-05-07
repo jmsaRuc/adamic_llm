@@ -19,10 +19,8 @@ def get_args():
     parser.add_argument(
         "--task",
         type=str,
-        default="mgsm",
+        default="mmmlu",
         choices=[
-            "mgsm",
-            "xcopa",
             "xnli",
             "paws-x",
             "xlsum",
@@ -39,12 +37,12 @@ def get_args():
         "--model_type",
         type=str,
         default="default",
-        help="[default, openai, together, vllm, groq]",
+        help="[default, openai, groq, open-router]",
     )
     parser.add_argument(
         "--max_tokens",
         type=int,
-        default=2048,
+        default=8192,
         help="max tokens for generation, only used for vllm and groq",
     )
     parser.add_argument(
@@ -117,7 +115,7 @@ def get_agent(args):
         "",
         model=args.model,
         temperature=0,
-        max_tokens=args.max_tokens if hasattr(args, "max_tokens") else 2048,
+        max_tokens=args.max_tokens,
         model_loaded=model_loaded,
         tokenizer=tokenizer,
         model_type=args.model_type,
@@ -161,6 +159,8 @@ def inference(args):
         item["prompt"] = prompt
 
         res1, completion_tokens, prompt_tokens = agent_base.respond(prompt)
+        if not res1:
+            res1 = ""
         if check_ans(args, res1):
             ans = clean_ans(args, res1)
         else:
@@ -170,6 +170,8 @@ def inference(args):
             )
             completion_tokens += completion_tokens2
             prompt_tokens += prompt_tokens2
+            if not res2:
+                res2 = ""
             ans = clean_ans(args, res2)
 
         item["pred"] = ans

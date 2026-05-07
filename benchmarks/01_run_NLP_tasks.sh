@@ -1,19 +1,23 @@
-num_samples=10
+num_samples=2
 results_folder=results
-overwrite=1
+overwrite=0
 do_inference=1
 post_process=1
 re_evaluate=0
 script=run_nlp_tasks.py
 
-# model=meta-llama/Llama-2-7b-chat-hf
-model=openai/gpt-oss-120b
-#model=adamic_graph
-model_type=groq
+#model=meta-llama/llama-4-scout-17b-16e-instruct
+#model=openai/gpt-oss-120b
+#model=adamic_graph/llama-4-scout-17b-16e-instruct
+#model=adamic_graph/gpt-oss-120b
+#model=anthropic/claude-opus-4.7
+model=adamic_graph/claude-opus-4.7
+model_type=open-router
 model_judge=anthropic/claude-opus-4.6
 
 lang_list=all
-prompt_type_list=google_direct
+#prompt_type_list="direct,direct_native,google_direct"
+prompt_type_list="adamic"
 task_list=all
 
 gpu=1,2
