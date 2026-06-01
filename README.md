@@ -1,6 +1,7 @@
-# adamic_llm
+# Adamic LLM
 
-This project was made as part of the study: Is Translation Context All You Need?
+This project was made as part of the study: 
+The Cost-Benefit off Translation
 Improving Large Language Models Multilingual
 Capability with Adamic Prompting
 
