@@ -36,20 +36,49 @@ def get_app() -> FastAPI:
             "llm_provider": "groq",
             "groq_llm": "openai/gpt-oss-120b",
             "groq_api_base": "https://api.groq.com/",
+            "groq_api_key": settings.groq_api_key,
+            "open_router_api_key": settings.openrouter_api_key,
             "google_project_id": settings.google_project_id,
             "google_application_credentials": settings.google_application_credentials,
             "mode": "adamic",
         }
     )
-
+    adamic_graph_self_translate_with_config_gpt_oss = adamic_graph.with_config(
+        configurable={
+            "llm_provider": "groq",
+            "groq_llm": "openai/gpt-oss-120b",
+            "groq_api_base": "https://api.groq.com/",
+            "groq_api_key": settings.groq_api_key,
+            "open_router_api_key": settings.openrouter_api_key,
+            "google_project_id": settings.google_project_id,
+            "google_application_credentials": settings.google_application_credentials,
+            "mode": "adamic",
+            "translation_method": "self-translate",
+        }
+    )
     adamic_graph_with_config_llama4 = adamic_graph.with_config(
         configurable={
             "llm_provider": "groq",
             "groq_llm": "meta-llama/llama-4-scout-17b-16e-instruct",
             "groq_api_base": "https://api.groq.com/",
+            "groq_api_key": settings.groq_api_key,
+            "open_router_api_key": settings.openrouter_api_key,
             "google_project_id": settings.google_project_id,
             "google_application_credentials": settings.google_application_credentials,
             "mode": "adamic",
+        }
+    )
+    adamic_graph_self_translate_with_config_llama4 = adamic_graph.with_config(
+        configurable={
+            "llm_provider": "groq",
+            "groq_llm": "meta-llama/llama-4-scout-17b-16e-instruct",
+            "groq_api_base": "https://api.groq.com/",
+            "groq_api_key": settings.groq_api_key,
+            "open_router_api_key": settings.openrouter_api_key,
+            "google_project_id": settings.google_project_id,
+            "google_application_credentials": settings.google_application_credentials,
+            "mode": "adamic",
+            "translation_method": "self-translate",
         }
     )
     adamic_graph_with_config_opus = adamic_graph.with_config(
@@ -61,6 +90,41 @@ def get_app() -> FastAPI:
             "google_project_id": settings.google_project_id,
             "google_application_credentials": settings.google_application_credentials,
             "mode": "adamic",
+        }
+    )
+    adamic_graph_self_translate_with_config_opus = adamic_graph.with_config(
+        configurable={
+            "llm_provider": "open-router",
+            "open_router_llm": "anthropic/claude-opus-4.7",
+            "open_router_api_base": "https://openrouter.ai/api/v1",
+            "open_router_api_key": settings.openrouter_api_key,
+            "google_project_id": settings.google_project_id,
+            "google_application_credentials": settings.google_application_credentials,
+            "mode": "adamic",
+            "translation_method": "self-translate",
+        }
+    )
+    adamic_graph_with_config_deepseek = adamic_graph.with_config(
+        configurable={
+            "llm_provider": "open-router",
+            "open_router_llm": "deepseek/deepseek-v4-pro",
+            "open_router_api_base": "https://openrouter.ai/api/v1",
+            "open_router_api_key": settings.openrouter_api_key,
+            "google_project_id": settings.google_project_id,
+            "google_application_credentials": settings.google_application_credentials,
+            "mode": "adamic",
+        }
+    )
+    adamic_graph_self_translate_with_config_deepseek = adamic_graph.with_config(
+        configurable={
+            "llm_provider": "open-router",
+            "open_router_llm": "deepseek/deepseek-v4-pro",
+            "open_router_api_base": "https://openrouter.ai/api/v1",
+            "open_router_api_key": settings.openrouter_api_key,
+            "google_project_id": settings.google_project_id,
+            "google_application_credentials": settings.google_application_credentials,
+            "mode": "adamic",
+            "translation_method": "self-translate",
         }
     )
     os.environ["GROQ_API_KEY"] = settings.groq_api_key or ""
@@ -82,6 +146,26 @@ def get_app() -> FastAPI:
             ),
             "adamic_graph/claude-opus-4.7": GraphConfig(
                 graph=adamic_graph_with_config_opus,
+                streamable_node_names=["adamic_output"],
+            ),
+            "adamic_graph/deepseek-v4-pro": GraphConfig(
+                graph=adamic_graph_with_config_deepseek,
+                streamable_node_names=["adamic_output"],
+            ),
+            "adamic_graph_self_translate/gpt-oss-120b": GraphConfig(
+                graph=adamic_graph_self_translate_with_config_gpt_oss,
+                streamable_node_names=["adamic_output"],
+            ),
+            "adamic_graph_self_translate/llama-4-scout-17b-16e-instruct": GraphConfig(
+                graph=adamic_graph_self_translate_with_config_llama4,
+                streamable_node_names=["adamic_output"],
+            ),
+            "adamic_graph_self_translate/claude-opus-4.7": GraphConfig(
+                graph=adamic_graph_self_translate_with_config_opus,
+                streamable_node_names=["adamic_output"],
+            ),
+            "adamic_graph_self_translate/deepseek-v4-pro": GraphConfig(
+                graph=adamic_graph_self_translate_with_config_deepseek,
                 streamable_node_names=["adamic_output"],
             ),
         }

@@ -1,6 +1,7 @@
 import logging
 import os
 from typing import Literal
+import asyncio
 
 from google.api_core.retry_async import AsyncRetry
 from google.cloud.translate_v3 import TranslationServiceAsyncClient
@@ -10,6 +11,7 @@ from langchain_core.messages import (
     HumanMessage,
     SystemMessage,
 )
+from groq import APIStatusError
 from langchain_core.runnables import RunnableConfig
 from langchain_groq import ChatGroq
 from langchain_ollama import ChatOllama
@@ -25,6 +27,10 @@ from adamic_llm.services.adamic_prompting.prompts import (
     adamic_input_user_prompt,
     adamic_output_system_prompt,
     adamic_output_user_prompt,
+    adamic_self_translate_system_prompt,
+    adamic_self_translate_user_prompt,
+    adamic_input_with_self_translate_system_prompt,
+    adamic_input_with_self_translate_user_prompt,
 )
 from adamic_llm.services.adamic_prompting.state import (
     SummaryState,
@@ -40,6 +46,7 @@ from adamic_llm.services.adamic_prompting.utils import (
     get_request_message_history,
     get_system_message,
     insert_name_into_ai_message,
+    get_resoning_from_message
 )
 from adamic_llm.web.api.redis.schema import RedisListDTO
 from adamic_llm.web.api.redis.views import dev_rpush_in_memory_list, rpush_redis_list
@@ -65,7 +72,7 @@ async def preprocess_input(
     """
     configurable = Configuration.from_runnable_config(config)
     mode = configurable.mode
-
+    translation_method = configurable.translation_method
     if mode == "direct":
         log.info("Preprocessing skipped since mode is set to direct")
         return {
@@ -116,8 +123,11 @@ async def preprocess_input(
             redis_pool: ConnectionPool = config["configurable"]["services"][
                 "redis_pool"
             ]
+        else:
+            redis_pool: ConnectionPool = None  # type: ignore[assignment]
+        
         adamic_input_history, adamic_output_history = await get_adamic_history(
-            request_message_history, history_key, redis_pool, mode
+            request_message_history, history_key, redis_pool, mode, translation_method
         )
 
         if adamic_input_history is None or adamic_output_history is None:
@@ -254,17 +264,16 @@ async def detect_language(
 
 
 async def route_to_translation(
-    state: SummaryState,
-) -> Literal["translate_question", "adamic_bypass"]:
+    state: SummaryState, config: RunnableConfig
+) -> Literal["translate_question", "adamic_bypass", "adamic_self_translate"]:
     """
     Routes the flow based on the detected language.
 
     Parameters:
         state (SummaryState): The summary state containing the detected language code.
     Returns:
-        Literal["translate_question", "adamic_bypass"]: The next node to route to.
+        Literal["translate_question", "adamic_bypass", "adamic_self_translate"]: The next node to route to.
     """
-
     detect_language_code = state["detected_language_code"]
     if not detect_language_code:
         raise ValueError("detected_language_code must not be None for routing decision")
@@ -273,16 +282,25 @@ async def route_to_translation(
     if not detect_language_name:
         raise ValueError("detected_language_name must not be None for routing decision")
 
-    if detect_language_code != "en":
+    configurable = Configuration.from_runnable_config(config)
+    if detect_language_code == "en":
         log.info(
+        f"Routing to bypass node since detected language is {detect_language_name}"
+        )
+        return "adamic_bypass"
+    if configurable.translation_method == "self-translate":
+        log.info(
+            "Routing to self-translate node since"
+            f" detected language is {detect_language_name}"
+            " and translation method is set to self-translate"
+        )
+        return "adamic_self_translate"
+    
+    log.info(
             "Routing to translation node since"
             f" detected language is {detect_language_code}"
-        )
-        return "translate_question"
-    log.info(
-        f"Routing to bypass node since detected language is {detect_language_name}"
     )
-    return "adamic_bypass"
+    return "translate_question"
 
 
 async def adamic_bypass(
@@ -363,7 +381,7 @@ async def adamic_bypass(
                 )
 
     # Get max tokens from config if available, otherwise use default
-    if config["configurable"]["request_config"]["max_tokens"]:
+    if config.get("configurable", {}).get("request_config", {}).get("max_tokens"):
         max_tokens = config["configurable"]["request_config"]["max_tokens"]
         log.info(
             f"Using max_tokens from request config: {max_tokens} for adamic bypass node"
@@ -379,11 +397,12 @@ async def adamic_bypass(
             model=configurable.groq_llm,
             temperature=0.0,
             max_tokens=max_tokens,
+            api_key=configurable.groq_api_key,
             model_kwargs={"top_p": 1.0},
             reasoning_effort="high" if "gpt-oss" in configurable.groq_llm else None,
-            reasoning_format="parsed" if "gpt-oss" in configurable.groq_llm else None,
             timeout=120,
             max_retries=5,
+            streaming=False,
         )
     elif configurable.llm_provider == "open-router":
         llm_translate_q = ChatOpenAI(  # type: ignore[call-arg]
@@ -393,7 +412,10 @@ async def adamic_bypass(
             temperature=0.0,
             max_completion_tokens=max_tokens,
             top_p=1.0,
-            reasoning={"effort": "xhigh"},
+            streaming=False,
+            verbosity=None if "deepseek" in configurable.open_router_llm else "xhigh",
+            reasoning={"effort": "high"} if "deepseek" in configurable.open_router_llm else {"enabled": True},
+            extra_body={"thinking": {"type": "enabled"}, "reasoning": {"effort": "high"}} if "deepseek" in configurable.open_router_llm else {"reasoning": {"enabled": True}},
             timeout=120,
             max_retries=5,
         )
@@ -525,16 +547,48 @@ async def translate_question(
 
     retry = AsyncRetry(initial=0.5, maximum=30, multiplier=2, timeout=240)
     parent = f"projects/{configurable.google_project_id}/locations/global"
-
-    response = await google_client.translate_text(
-        parent=parent,
-        contents=[contents],
-        mime_type="text/plain",
-        source_language_code=state["detected_language_code"],
-        target_language_code="en",
-        retry=retry,
-    )
-    translated_question = response.translations[0].translated_text
+    
+    if len(contents) > 30000:  # Google Translate API has a limit of 30,720 bytes for content
+        log.warning(
+            f"Content length {len(contents)} exceeds Google Translate API limits,"
+            "splitting content to first 30000 characters for translation"
+            " and merging the two translations together. "
+            " This may lead to inaccurate translation results."
+        )
+        contents_half_len = len(contents) // 2
+        contents_under_half = contents[:contents_half_len]
+        contents_over_half = contents[contents_half_len:]
+        
+        response_under_half = await google_client.translate_text(
+            parent=parent,
+            contents=[contents_under_half],
+            mime_type="text/plain",
+            source_language_code=state["detected_language_code"],
+            target_language_code="en",
+            retry=retry,
+        )
+        
+        response_over_half = await google_client.translate_text(
+            parent=parent,
+            contents=[contents_over_half],
+            mime_type="text/plain",
+            source_language_code=state["detected_language_code"],
+            target_language_code="en",
+            retry=retry,
+        )
+        translated_question_under_half = response_under_half.translations[0].translated_text
+        translated_question_over_half = response_over_half.translations[0].translated_text
+        translated_question = translated_question_under_half + translated_question_over_half
+    else: 
+        response = await google_client.translate_text(
+            parent=parent,
+            contents=[contents],
+            mime_type="text/plain",
+            source_language_code=state["detected_language_code"],
+            target_language_code="en",
+            retry=retry,
+        )
+        translated_question = response.translations[0].translated_text
 
     return {
         "question_en": translated_question,
@@ -546,15 +600,15 @@ async def adamic_input(
     config: RunnableConfig,
 ) -> dict[str, AIMessage | int]:
     """
-    Asynchronously translates a Danish question to English using a configured LLM.
+    Asynchronously running the Adamic input through an LLM.
 
     Parameters:
         state (SummaryState): The summary state containing the Danish question.
         config (RunnableConfig): Configuration specifying the LLM provider
         and related parameters.
     Returns:
-        dict[str, AIMessage | int]: Updated state with both the original Danish question
-        and its English translation, along with token usage information.
+        dict[str, AIMessage | int]: 
+            Updated state with the English answer and token usage information.
     """
     question_en = state["question_en"]
     if not question_en:
@@ -619,8 +673,8 @@ async def adamic_input(
         detected_language=detected_language,
         system_message_content=system_message_content if system_message_content else "",
     )
-
-    # Insert the Danish research topic into the prompt
+    
+    # format user prompt with the detected language and the English question for multilingual context
     user_prompt = adamic_input_user_prompt.format(
         question_en=question_en,
         question_none_en=question_none_en,
@@ -662,7 +716,7 @@ async def adamic_input(
             )
 
     # Get max tokens from config if available, otherwise use default
-    if config["configurable"]["request_config"]["max_tokens"]:
+    if config.get("configurable", {}).get("request_config", {}).get("max_tokens"):
         max_tokens = config["configurable"]["request_config"]["max_tokens"]
         log.info(
             f"Using max_tokens from request config: {max_tokens} for adamic input node"
@@ -678,11 +732,13 @@ async def adamic_input(
             model=configurable.groq_llm,
             temperature=0.0,
             max_tokens=max_tokens,
+            api_key=configurable.groq_api_key,
             model_kwargs={"top_p": 1.0},
             reasoning_effort="high" if "gpt-oss" in configurable.groq_llm else None,
-            reasoning_format="parsed" if "gpt-oss" in configurable.groq_llm else None,
             timeout=120,
-            max_retries=3,
+            max_retries=10,
+            streaming=False,
+            service_tier="auto",
         )
     elif configurable.llm_provider == "open-router":
         llm_translate_q = ChatOpenAI(  # type: ignore[call-arg]
@@ -692,9 +748,12 @@ async def adamic_input(
             temperature=0.0,
             max_completion_tokens=max_tokens,
             top_p=1.0,
-            reasoning={"effort": "xhigh"},
+            verbosity=None if "deepseek" in configurable.open_router_llm else "xhigh",
+            reasoning={"effort": "high"} if "deepseek" in configurable.open_router_llm else {"enabled": True},
+            extra_body={"thinking": {"type": "enabled"}, "reasoning": {"effort": "high"}} if "deepseek" in configurable.open_router_llm else {"reasoning": {"enabled": True}},
             timeout=120,
             max_retries=3,
+            streaming=False,
         )
     elif configurable.llm_provider == "openai":
         llm_translate_q = ChatOpenAI(  # type: ignore[call-arg]
@@ -729,9 +788,18 @@ async def adamic_input(
     input_messages.append(HumanMessage(content=user_prompt))
 
     # Run the LLM
-    result = await llm_translate_q.ainvoke(
-        input_messages,
-    )
+    for atempt in range(10):
+        try:
+            result = await llm_translate_q.ainvoke(
+                input_messages,
+            )
+        except APIStatusError as e:
+            log.warning(f"Groq Ratelimit: {e}, Retrying.. | Attempt {atempt + 1}/10")
+            await asyncio.sleep(atempt * 2.1)
+        else:
+            break
+    else:
+        raise RuntimeError("Failed to get response from LLM after 10 attempts")
 
     content = await get_content_from_message(result)
     if not content:
@@ -900,7 +968,7 @@ async def adamic_output(
     configurable = Configuration.from_runnable_config(config)
 
     # Get max tokens from config if available, otherwise use default
-    if config["configurable"]["request_config"]["max_tokens"]:
+    if config.get("configurable", {}).get("request_config", {}).get("max_tokens"):
         max_tokens = config["configurable"]["request_config"]["max_tokens"]
         log.info(
             f"Using max_tokens from request config: {max_tokens} for adamic output node"
@@ -916,11 +984,13 @@ async def adamic_output(
             model=configurable.groq_llm,
             temperature=0.0,
             max_tokens=max_tokens,
+            api_key=configurable.groq_api_key,
             model_kwargs={"top_p": 1.0},
             reasoning_effort="high" if "gpt-oss" in configurable.groq_llm else None,
-            reasoning_format="parsed" if "gpt-oss" in configurable.groq_llm else None,
             timeout=120,
-            max_retries=3,
+            max_retries=10,
+            streaming=False,
+            service_tier="auto",
         )
     elif configurable.llm_provider == "open-router":
         llm_translate_q = ChatOpenAI(  # type: ignore[call-arg]
@@ -930,9 +1000,12 @@ async def adamic_output(
             temperature=0.0,
             max_completion_tokens=max_tokens,
             top_p=1.0,
-            reasoning={"effort": "xhigh"},
+            verbosity=None if "deepseek" in configurable.open_router_llm else "xhigh",
+            reasoning={"effort": "high"} if "deepseek" in configurable.open_router_llm else {"enabled": True},
+            extra_body={"thinking": {"type": "enabled"}, "reasoning": {"effort": "high"}} if "deepseek" in configurable.open_router_llm else {"reasoning": {"enabled": True}},
             timeout=120,
             max_retries=3,
+            streaming=False,
         )
     elif configurable.llm_provider == "openai":
         llm_translate_q = ChatOpenAI(  # type: ignore[call-arg]
@@ -966,9 +1039,18 @@ async def adamic_output(
     output_messages.append(HumanMessage(content=user_prompt))
 
     # Run the LLM
-    result = await llm_translate_q.ainvoke(
-        output_messages,
-    )
+    for atempt in range(10):
+        try:
+            result = await llm_translate_q.ainvoke(
+                output_messages,
+            )
+        except APIStatusError as e:
+            log.warning(f"Groq Ratelimit: {e}, Retrying.. | Attempt {atempt + 1}/10")
+            await asyncio.sleep(atempt * 2.1)
+        else:
+            break
+    else:
+        raise RuntimeError("Failed to get response from LLM after 10 attempts")
 
     # get the content of the AI message, which is the translated answer
     # in the target language
@@ -1022,7 +1104,445 @@ async def adamic_output(
         "messages": old_ai_answer_en,
     }
 
+async def adamic_self_translate(
+    state: SummaryState,
+    config: RunnableConfig,
+) -> dict[str, str | int]:
+    """Asynchronously translates a Danish question to English using a configured LLM.
+    
+    Parameters:
+        state (SummaryState): The summary state containing the Danish question.
+        config (RunnableConfig): The configuration for the runnable LLM.
+    Returns:
+        dict[str, str | int]: Updated state with the English translation of the question,
+        along with token usage information."""
+    question_none_en = state["question_none_en"]
+    if not question_none_en:
+        raise ValueError("question_none_en must not be None for adamic self-translate node")
+    
+    detect_language_code = state["detected_language_code"]
+    if not detect_language_code:
+        raise ValueError("detected_language_code must not be None for adamic self-translate node")
+    
+    detected_language = (
+        state["detected_language_name"]
+        if state["detected_language_name"]
+        else state["detected_language_code"]
+    )
+    
+    # get history
+    message_history = state["message_history"]
+    adamic_self_translate_history: list[AnyMessage] | None
+    
+    if message_history:
+        adamic_self_translate_history = state["adamic_input_history"]
+        if not adamic_self_translate_history:
+            raise ValueError(
+                "Message_history is True but adamic_self_translate_history is None,"
+                " in the state for adamic self-translate node"
+            )
+        log.info(
+            f"Using message history with {len(adamic_self_translate_history)}"
+            " messages for adamic self-translate node"
+        )
+    else:
+        adamic_self_translate_history = None
+        
+    key = state["history_key"]
+    if not key:
+        raise ValueError("history_key must not be None for adamic self-translate node")
+    
+    # format system prompt with the detected language
+    systems_prompt = adamic_self_translate_system_prompt.format(
+        detected_language=detected_language
+    )
+    
+    user_prompt = adamic_self_translate_user_prompt.format(
+        question_none_en=question_none_en,
+        detected_language=detected_language
+    )
+    
+    # Get max tokens from config if available, otherwise use default
+    if config.get("configurable", {}).get("request_config", {}).get("max_tokens"):
+        max_tokens = config["configurable"]["request_config"]["max_tokens"]
+        log.info(
+            f"Using max_tokens from request config: {max_tokens} for adamic input node"
+        )
+    else:
+        max_tokens = 8192
+        log.info(f"Using default max_tokens: {max_tokens} for adamic input node")
+    
+    configurable = Configuration.from_runnable_config(config)
+    # Choose the appropriate LLM based on the provider
+    llm_translate_q: ChatGroq | ChatOpenAI | ChatOllama | ChatOpenRouter
+    if configurable.llm_provider == "groq":
+        llm_translate_q = ChatGroq(  # type: ignore[call-arg]
+            model=configurable.groq_llm,
+            temperature=0.0,
+            max_tokens=max_tokens,
+            api_key=configurable.groq_api_key,
+            model_kwargs={"top_p": 1.0},
+            reasoning_effort="high" if "gpt-oss" in configurable.groq_llm else None,
+            timeout=120,
+            max_retries=10,
+            service_tier="auto",
+            streaming=False,
+        )
+    elif configurable.llm_provider == "open-router":
+        llm_translate_q = ChatOpenAI(  # type: ignore[call-arg]
+            model=configurable.open_router_llm,
+            base_url=configurable.open_router_api_base,
+            api_key=configurable.open_router_api_key,
+            temperature=0.0,
+            max_completion_tokens=max_tokens,
+            top_p=1.0,
+            verbosity=None if "deepseek" in configurable.open_router_llm else "xhigh",
+            reasoning={"effort": "high"} if "deepseek" in configurable.open_router_llm else {"enabled": True},
+            extra_body={"thinking": {"type": "enabled"}, "reasoning": {"effort": "high"}} if "deepseek" in configurable.open_router_llm else {"reasoning": {"enabled": True}},
+            timeout=120,
+            max_retries=3,
+            streaming=False,
+        )
+    elif configurable.llm_provider == "openai":
+        llm_translate_q = ChatOpenAI(  # type: ignore[call-arg]
+            model=configurable.openai_llm,
+            base_url=configurable.openai_api_base,
+            temperature=0.7,
+            max_tokens=max_tokens,
+            timeout=120,
+            max_retries=5,
+        )
+    else:  # Default to Ollama
+        llm_translate_q = ChatOllama(
+            model=configurable.local_llm,
+            temperature=0.7,
+            num_predict=max_tokens,
+        )
 
+    # insert formattet new prompt and system prompt into the history
+    # if message history is enabled
+    input_messages: list[AnyMessage] = []
+    
+    if message_history:
+        if not adamic_self_translate_history:
+            raise ValueError(
+                "Message_history is True but adamic_self_translate_history is None,"
+                " in the state for adamic self-translate node"
+            )
+        input_messages = adamic_self_translate_history
+    
+    input_messages.insert(0, SystemMessage(content=systems_prompt))
+    input_messages.append(HumanMessage(content=user_prompt))
+    
+    
+    # Run the LLM
+    for atempt in range(10):
+        try:
+            result = await llm_translate_q.ainvoke(
+                input_messages,
+            )
+            break
+        except APIStatusError as e:
+            log.warning(f"Groq Ratelimit: {e}, Retrying.. | Attempt {atempt + 1}/10")
+            await asyncio.sleep(atempt * 2.1)
+    else:
+        raise RuntimeError("Failed to get response from LLM after 10 attempts")
+            
+    content = await get_content_from_message(result)
+    if not content:
+        content = ""
+        log.warning(
+            "The content of the content from the LLM result is empty,"
+            " saving empty string to Redis and proceeding with empty content."
+        )
+    
+    prompt_tokens = (
+        result.usage_metadata["input_tokens"] if result.usage_metadata else 0
+    )
+    completion_tokens = (
+        result.usage_metadata["output_tokens"] if result.usage_metadata else 0
+    )
+    
+    # save the AI message content to Redis list for history with key
+    # if dev mode, save to in-memory history instead of Redis
+    mode = configurable.mode
+    redis_response_values = RedisListDTO(key=key, value_list=[content])
+    if mode != "dev":
+        redis_pool: ConnectionPool = config["configurable"]["services"]["redis_pool"]
+        try:
+            index = await rpush_redis_list(
+                redis_response_values,
+                redis_pool=redis_pool,
+            )
+            log.info(
+                "Saved AI message content from input node to Redis list"
+                f" with key {key} at index {index}"
+            )
+        except Exception as e:
+            log.error(f"Error pushing to Redis list: {e}")
+            log.error(
+                "Failed to save AI message content from input node to Redis"
+                f" for key {key}"
+            )
+    else:
+        try:
+            index = await dev_rpush_in_memory_list(
+                redis_response_values,
+            )
+            log.info(
+                "Saved AI message content from input node to in-memory history"
+                f" with key {key} at index {index}"
+            )
+        except Exception as e:
+            log.error(f"Error pushing to in-memory history: {e}")
+            log.error(
+                "Failed to save AI message content from input node to in-memory history"
+                f" for key {key}"
+            )
+    return {
+        "question_en": content,
+        "prompt_tokens": prompt_tokens,
+        "completion_tokens": completion_tokens,
+    }
+    
+async def adamic_input_with_self_translate(
+    state: SummaryState,
+    config: RunnableConfig,
+) -> dict[str, AIMessage]:
+    """
+    Asynchronously running the Adamic input with self-translation through an LLM.
+    
+    Parameters:
+        state (SummaryState): The current state of the Adamic input node.
+        config (RunnableConfig): The configuration for the runnable LLM.
+
+    Returns:
+        dict[str, AIMessage]: The updated state with the English answer and token usage information.
+    """
+    question_en = state["question_en"]
+    if not question_en:
+        log.warning(
+            "question_en is None for adamic input with self-translate node,"
+            " this means the translation node did not return any content"
+            " or the content is empty."
+            " Proceeding with empty string as question_en for adamic input with self-translate node."
+        )
+        question_en = ""
+    
+    question_none_en = state["question_none_en"]
+    if not question_none_en:
+        raise ValueError("question_none_en must not be None for adamic input node")
+
+    detect_language_code = state["detected_language_code"]
+    if not detect_language_code:
+        raise ValueError(
+            "detected_language_code must not be None for adamic input node"
+        )
+
+    detected_language = (
+        state["detected_language_name"]
+        if state["detected_language_name"]
+        else state["detected_language_code"]
+    )
+
+    prompt_tokens = state["prompt_tokens"]
+    if prompt_tokens is None:
+        raise ValueError("prompt_tokens must not be None for adamic output node")
+
+    completion_tokens = state["completion_tokens"]
+    if completion_tokens is None:
+        raise ValueError("completion_tokens must not be None for adamic output node")
+    
+    system_message = await get_system_message(state)
+
+    if system_message:
+        system_message_content = await get_content_from_message(system_message)
+        if not system_message_content:
+            log.warning(
+                "System message found but content is empty,"
+                " proceeding without system message content"
+            )
+            system_message_content = None
+        else:
+            log.info(f"Additional system message added: {system_message_content}")
+    else:
+        system_message_content = None
+        log.info("No additional system message found")
+
+    # get history
+    message_history = state["message_history"]
+    adamic_input_with_self_translation_history: list[AnyMessage] | None
+    
+    if message_history:
+        adamic_input_with_self_translation_history = state["adamic_output_history"]
+        if not adamic_input_with_self_translation_history:
+            raise ValueError(
+                "Message_history is True but adamic_input_with_self_translation_history is None,"
+                " in the state for adamic input node"
+            )
+        log.info(
+            f"Using message history with {len(adamic_input_with_self_translation_history)}"
+            " messages for adamic input node"
+        )
+    else:
+        adamic_input_with_self_translation_history = None
+    
+    key = state["history_key"]
+    if not key:
+        raise ValueError("history_key must not be None for adamic input node")
+    
+    # format system prompt with the detected language
+    systems_prompt = adamic_input_with_self_translate_system_prompt.format(
+        detected_language=detected_language,
+        system_message_content=system_message_content if system_message_content else "",
+    )
+    
+    # format user prompt with the detected language 
+    # and the English question for multilingual context
+    user_prompt = adamic_input_with_self_translate_user_prompt.format(
+        question_en=question_en,
+        question_none_en=question_none_en,
+        detected_language=detected_language,
+    )
+    
+    # Get max tokens from config if available, otherwise use default
+    if config.get("configurable", {}).get("request_config", {}).get("max_tokens"):
+        max_tokens = config["configurable"]["request_config"]["max_tokens"]
+        log.info(
+            f"Using max_tokens from request config: {max_tokens} for adamic input node"
+        )
+    else:
+        max_tokens = 8192
+        log.info(f"Using default max_tokens: {max_tokens} for adamic input node")
+        
+    configurable = Configuration.from_runnable_config(config)
+    
+     # Choose the appropriate LLM based on the provider
+    llm_translate_q: ChatGroq | ChatOpenAI | ChatOllama | ChatOpenRouter
+    if configurable.llm_provider == "groq":
+        llm_translate_q = ChatGroq(  # type: ignore[call-arg]
+            model=configurable.groq_llm,
+            temperature=0.0,
+            max_tokens=max_tokens,
+            api_key=configurable.groq_api_key,
+            model_kwargs={"top_p": 1.0},
+            reasoning_effort="high" if "gpt-oss" in configurable.groq_llm else None,
+            timeout=120,
+            max_retries=10,
+            streaming=False,
+            service_tier="auto",
+        )
+    elif configurable.llm_provider == "open-router":
+        llm_translate_q = ChatOpenAI(  # type: ignore[call-arg]
+            model=configurable.open_router_llm,
+            base_url=configurable.open_router_api_base,
+            api_key=configurable.open_router_api_key,
+            temperature=0.0,
+            max_completion_tokens=max_tokens,
+            top_p=1.0,
+            verbosity=None if "deepseek" in configurable.open_router_llm else "xhigh",
+            reasoning={"effort": "high"} if "deepseek" in configurable.open_router_llm else {"enabled": True},
+            extra_body={"thinking": {"type": "enabled"}, "reasoning": {"effort": "high"}} if "deepseek" in configurable.open_router_llm else {"reasoning": {"enabled": True}},
+            timeout=120,
+            max_retries=3,
+            streaming=False,
+        )
+    elif configurable.llm_provider == "openai":
+        llm_translate_q = ChatOpenAI(  # type: ignore[call-arg]
+            model=configurable.openai_llm,
+            base_url=configurable.openai_api_base,
+            temperature=0.7,
+            max_tokens=max_tokens,
+            timeout=120,
+            max_retries=5,
+        )
+    else:  # Default to Ollama
+        llm_translate_q = ChatOllama(
+            model=configurable.local_llm,
+            temperature=0.7,
+            num_predict=max_tokens,
+        )
+        
+    # insert formattet new prompt and system prompt into the history
+    # if message history is enabled
+    input_messages: list[AnyMessage] = []
+    
+    if message_history:
+        if not adamic_input_with_self_translation_history:
+            raise ValueError(
+                "Message_history is True"
+                " but adamic_input_with_self_translation_history is None,"
+                " in the state for adamic input node"
+            )
+
+        input_messages = adamic_input_with_self_translation_history
+    
+    input_messages.insert(0, SystemMessage(content=systems_prompt))
+    input_messages.append(HumanMessage(content=user_prompt))
+    
+    # Run the LLM
+    for atempt in range(10):
+        try:
+            result = await llm_translate_q.ainvoke(
+                input_messages,
+            )
+        except APIStatusError as e:
+            log.warning(f"Groq Ratelimit: {e}, Retrying.. | Attempt {atempt + 1}/10")
+            await asyncio.sleep(atempt * 2.1)
+        else:
+            break
+    else:
+        raise RuntimeError("Failed to get response from LLM after 10 attempts")
+    
+    # get the content of the AI message, which is the translated answer
+    # in the target language
+    content = await get_content_from_message(result)
+    
+    if not content:
+        log.warning("The content from the LLM result is empty,"
+                    " using reasoning as content if available for adamic input with self-translation node")
+        reasoning = await get_resoning_from_message(result)
+        if reasoning:
+            content = reasoning
+            log.info("Reasoning found and used as content for adamic input with self-translation node")
+        else:
+            log.error(
+                "The content of the AI message is empty for"
+                " adamic input with self-translation node,"
+                " this means response failed"
+                " or the model did not return any content."
+                " Try raising the max_tokens in the configuration"
+                " for the adamic input with self-translation node"
+            )
+    
+    result.content = content if content else ""
+   
+        
+    prompt_tokens_new = (
+        result.usage_metadata["input_tokens"] if result.usage_metadata else 0
+    ) + prompt_tokens
+    completion_tokens_new = (
+        result.usage_metadata["output_tokens"] if result.usage_metadata else 0
+    ) + completion_tokens
+    
+    result.usage_metadata["input_tokens"] = prompt_tokens_new
+    result.usage_metadata["output_tokens"] = completion_tokens_new
+    
+    # insert name with key into the AI message
+    lang_code = state["detected_language_code"]
+    if not lang_code:
+        raise ValueError(
+            "detected_language_code must not be None for adamic output node"
+            " when inserting key into AI message"
+        )
+        
+    key_lang = await create_key_lang(key, lang_code)
+    result = await insert_name_into_ai_message(result, key_lang)
+    
+    return {
+        "messages": result
+    }
+    
 # Add nodes and edges
 builder = StateGraph(
     SummaryState,
@@ -1036,6 +1556,8 @@ builder.add_node("adamic_bypass", adamic_bypass)
 builder.add_node("translate_question", translate_question)
 builder.add_node("adamic_input", adamic_input)
 builder.add_node("adamic_output", adamic_output)
+builder.add_node("adamic_self_translate", adamic_self_translate)
+builder.add_node("adamic_input_with_self_translate", adamic_input_with_self_translate)
 
 # Add edges
 builder.add_edge(START, "preprocess_input")
@@ -1045,4 +1567,6 @@ builder.add_edge("translate_question", "adamic_input")
 builder.add_edge("adamic_bypass", END)
 builder.add_edge("adamic_input", "adamic_output")
 builder.add_edge("adamic_output", END)
+builder.add_edge("adamic_self_translate", "adamic_input_with_self_translate")
+builder.add_edge("adamic_input_with_self_translate", END)
 graph = builder.compile()

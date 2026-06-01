@@ -1,0 +1,13 @@
+num,Model,Prompt Type,de,fr,zh,es,ja,ko,mean_accuracy_high_resource,mean_accuracy_low_resource,mean_accuracy_all
+2,adamic_graph/claude-opus-4.7,adamic,100.0,100.0,100.0,50.0,50.0,50.0,80.0,50.0,75.0
+2,adamic_graph/gpt-oss-120b,adamic,100.0,100.0,50.0,100.0,50.0,50.0,80.0,50.0,75.0
+2,adamic_graph/llama-4-scout-17b-16e-instruct,adamic,100.0,100.0,100.0,100.0,50.0,50.0,90.0,50.0,83.33333333333333
+2,anthropic/claude-opus-4.7,direct,100.0,100.0,50.0,50.0,50.0,50.0,70.0,50.0,66.66666666666667
+2,anthropic/claude-opus-4.7,direct_native,100.0,100.0,50.0,50.0,50.0,50.0,70.0,50.0,66.66666666666667
+2,anthropic/claude-opus-4.7,google_direct,100.0,100.0,100.0,50.0,50.0,50.0,80.0,50.0,75.0
+2,meta-llama/llama-4-scout-17b-16e-instruct,direct,100.0,100.0,50.0,100.0,100.0,100.0,90.0,100.0,91.66666666666667
+2,meta-llama/llama-4-scout-17b-16e-instruct,direct_native,100.0,100.0,50.0,100.0,100.0,100.0,90.0,100.0,91.66666666666667
+2,meta-llama/llama-4-scout-17b-16e-instruct,google_direct,100.0,100.0,50.0,50.0,50.0,100.0,70.0,100.0,75.0
+2,openai/gpt-oss-120b,direct,100.0,100.0,50.0,100.0,50.0,100.0,80.0,100.0,83.33333333333333
+2,openai/gpt-oss-120b,direct_native,100.0,100.0,50.0,100.0,50.0,50.0,80.0,50.0,75.0
+2,openai/gpt-oss-120b,google_direct,100.0,100.0,50.0,100.0,50.0,100.0,80.0,100.0,83.33333333333333

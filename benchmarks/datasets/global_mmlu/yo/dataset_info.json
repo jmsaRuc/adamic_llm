@@ -1,112 +1,76 @@
 {
-  "builder_name": "parquet",
   "citation": "",
-  "config_name": "yo",
-  "dataset_name": "global-mmlu",
-  "dataset_size": 10848726,
   "description": "",
-  "download_checksums": {
-    "hf://datasets/CohereLabs/Global-MMLU@0e619dbeb34206cd48705a1a0ea7fb21cae09993/yo/test-00000-of-00001.parquet": {
-      "num_bytes": 4608095,
-      "checksum": null
-    },
-    "hf://datasets/CohereLabs/Global-MMLU@0e619dbeb34206cd48705a1a0ea7fb21cae09993/yo/dev-00000-of-00001.parquet": {
-      "num_bytes": 87473,
-      "checksum": null
-    }
-  },
-  "download_size": 4695568,
   "features": {
     "sample_id": {
-      "dtype": "string",
-      "_type": "Value"
-    },
-    "subject": {
-      "dtype": "string",
+      "dtype": "large_string",
       "_type": "Value"
     },
     "subject_category": {
-      "dtype": "string",
+      "dtype": "large_string",
       "_type": "Value"
     },
     "question": {
-      "dtype": "string",
+      "dtype": "large_string",
       "_type": "Value"
     },
     "option_a": {
-      "dtype": "string",
+      "dtype": "large_string",
       "_type": "Value"
     },
     "option_b": {
-      "dtype": "string",
+      "dtype": "large_string",
       "_type": "Value"
     },
     "option_c": {
-      "dtype": "string",
+      "dtype": "large_string",
       "_type": "Value"
     },
     "option_d": {
-      "dtype": "string",
+      "dtype": "large_string",
       "_type": "Value"
     },
     "answer": {
-      "dtype": "string",
+      "dtype": "large_string",
       "_type": "Value"
     },
     "required_knowledge": {
-      "dtype": "string",
+      "dtype": "large_string",
       "_type": "Value"
     },
     "time_sensitive": {
-      "dtype": "string",
+      "dtype": "large_string",
       "_type": "Value"
     },
     "reference": {
-      "dtype": "string",
+      "dtype": "large_string",
       "_type": "Value"
     },
     "culture": {
-      "dtype": "string",
+      "dtype": "large_string",
       "_type": "Value"
     },
     "region": {
-      "dtype": "string",
+      "dtype": "large_string",
       "_type": "Value"
     },
     "country": {
-      "dtype": "string",
+      "dtype": "large_string",
       "_type": "Value"
     },
     "cultural_sensitivity_label": {
-      "dtype": "string",
+      "dtype": "large_string",
       "_type": "Value"
     },
     "is_annotated": {
       "dtype": "bool",
       "_type": "Value"
+    },
+    "subject": {
+      "dtype": "large_string",
+      "_type": "Value"
     }
   },
   "homepage": "",
-  "license": "",
-  "size_in_bytes": 15544294,
-  "splits": {
-    "test": {
-      "name": "test",
-      "num_bytes": 10694916,
-      "num_examples": 14042,
-      "dataset_name": "global-mmlu"
-    },
-    "dev": {
-      "name": "dev",
-      "num_bytes": 153810,
-      "num_examples": 285,
-      "dataset_name": "global-mmlu"
-    }
-  },
-  "version": {
-    "version_str": "0.0.0",
-    "major": 0,
-    "minor": 0,
-    "patch": 0
-  }
+  "license": ""
 }

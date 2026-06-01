@@ -192,6 +192,26 @@ async def get_content_from_message(message: AnyMessage) -> str | None:
         return None
     return content
 
+async def get_resoning_from_message(message: AnyMessage) -> str | None:
+    """
+    Retrieve the reasoning from a message.
+
+    Args:
+        message (AnyMessage): The message to extract reasoning from.
+
+    Returns:
+        str | None: The reasoning of the message, or None if no reasoning is available.
+    """
+    if not message:
+        return None
+    
+    content = message.content
+    for con in content:
+        if con["type"] == "reasoning":
+            reasoning = con
+            if reasoning and isinstance(reasoning, str):
+                return reasoning
+    return None
 
 async def get_system_message(state: SummaryState) -> SystemMessage | None:
     """

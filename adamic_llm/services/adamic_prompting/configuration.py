@@ -18,10 +18,15 @@ class SearchAPI(Enum):
 class Configuration(BaseModel):
     """The configurable fields for adamic-llm."""
 
-    mode: Literal["direct", "basic-translation", "adamic", "dev"] = Field(
+    mode: Literal["adamic", "dev", "direct"] = Field(
         default="adamic",
         title="Mode of Operation",
         description="Mode of operation for the research assistant",
+    )
+    translation_method: Literal["google", "self-translate"] = Field(
+        default="google",
+        title="Translation Method",
+        description="Method to use for translating non-English questions",
     )
     local_llm: str = Field(
         default="deepseek-r1:1.5b-qwen-distill-q8_0",
@@ -52,6 +57,10 @@ class Configuration(BaseModel):
         default="https://api.groq.com/",
         title="GROQ API Base URL",
         description="Base URL for the GROQ API",
+    )
+    groq_api_key: SecretStr = Field(
+        title="GROQ API Key",
+        description="API key for the GROQ API",
     )
     open_router_api_base: str = Field(
         default="https://openrouter.ai/",
@@ -104,7 +113,8 @@ class Configuration(BaseModel):
             for name in cls.model_fields.keys()  # noqa: SIM118
         }
 
+
         # Filter out None values
-        values = {k: v for k, v in raw_values.items() if v is not None}
+        values = {k: v for k, v in raw_values.items() if v is not None or isinstance(v, SecretStr)}
 
         return cls(**values)

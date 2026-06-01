@@ -1,0 +1,66 @@
+{
+  "builder_name": "csv",
+  "citation": "",
+  "config_name": "ID_ID",
+  "dataset_name": "mmmlu",
+  "dataset_size": 7427506,
+  "description": "",
+  "download_checksums": {
+    "hf://datasets/openai/MMMLU@325a01dc3e173cac1578df94120499aaca2e2504/test/mmlu_ID-ID.csv": {
+      "num_bytes": 7112650,
+      "checksum": null
+    }
+  },
+  "download_size": 7112650,
+  "features": {
+    "Unnamed: 0": {
+      "dtype": "int64",
+      "_type": "Value"
+    },
+    "Question": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "A": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "B": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "C": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "D": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "Answer": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "Subject": {
+      "dtype": "string",
+      "_type": "Value"
+    }
+  },
+  "homepage": "",
+  "license": "",
+  "size_in_bytes": 14540156,
+  "splits": {
+    "test": {
+      "name": "test",
+      "num_bytes": 7427506,
+      "num_examples": 14042,
+      "dataset_name": "mmmlu"
+    }
+  },
+  "version": {
+    "version_str": "0.0.0",
+    "major": 0,
+    "minor": 0,
+    "patch": 0
+  }
+}

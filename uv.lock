@@ -53,6 +53,7 @@ dependencies = [
 
 [package.dev-dependencies]
 benchmark = [
+    { name = "catppuccin" },
     { name = "datasets" },
     { name = "groq" },
     { name = "jsonlines" },
@@ -64,12 +65,14 @@ benchmark = [
     { name = "pandas" },
     { name = "python-dotenv" },
     { name = "rouge-score" },
+    { name = "seaborn" },
     { name = "tenacity" },
     { name = "tiktoken" },
     { name = "tqdm" },
 ]
 dev-full = [
     { name = "anyio" },
+    { name = "catppuccin" },
     { name = "datasets" },
     { name = "fakeredis" },
     { name = "groq" },
@@ -88,6 +91,7 @@ dev-full = [
     { name = "python-dotenv" },
     { name = "rouge-score" },
     { name = "ruff" },
+    { name = "seaborn" },
     { name = "tenacity" },
     { name = "tiktoken" },
     { name = "tqdm" },
@@ -134,6 +138,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 benchmark = [
+    { name = "catppuccin", specifier = ">=2.5.0" },
     { name = "datasets", specifier = ">=4.8.4" },
     { name = "groq", specifier = ">=0.37.1" },
     { name = "jsonlines", specifier = ">=4.0.0" },
@@ -145,12 +150,14 @@ benchmark = [
     { name = "pandas", specifier = ">=3.0.2" },
     { name = "python-dotenv", specifier = ">=1.2.2" },
     { name = "rouge-score", specifier = ">=0.1.2" },
+    { name = "seaborn", specifier = ">=0.13.2" },
     { name = "tenacity", specifier = ">=9.1.4" },
     { name = "tiktoken", specifier = ">=0.12.0" },
     { name = "tqdm", specifier = ">=4.67.3" },
 ]
 dev-full = [
     { name = "anyio", specifier = ">=4.11.0,<5" },
+    { name = "catppuccin", specifier = ">=2.5.0" },
     { name = "datasets", specifier = ">=4.8.4" },
     { name = "fakeredis", specifier = ">=2.32.1,<3" },
     { name = "groq", specifier = ">=0.37.1" },
@@ -169,6 +176,7 @@ dev-full = [
     { name = "python-dotenv", specifier = ">=1.2.2" },
     { name = "rouge-score", specifier = ">=0.1.2" },
     { name = "ruff", specifier = ">=0.14.6,<1" },
+    { name = "seaborn", specifier = ">=0.13.2" },
     { name = "tenacity", specifier = ">=9.1.4" },
     { name = "tiktoken", specifier = ">=0.12.0" },
     { name = "tqdm", specifier = ">=4.67.3" },
@@ -462,6 +470,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/55/e0/dcbab602790a576b0b94108c07e2c048e5897df7cc83722a89582d733987/blockbuster-1.5.26.tar.gz", hash = "sha256:cc3ce8c70fa852a97ee3411155f31e4ad2665cd1c6c7d2f8bb1851dab61dc629", size = 36085, upload-time = "2025-12-05T10:43:47.735Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/95/c1/84fc6811122f54b20de2e5afb312ee07a3a47a328755587d1e505475239b/blockbuster-1.5.26-py3-none-any.whl", hash = "sha256:f8e53fb2dd4b6c6ec2f04907ddbd063ca7cd1ef587d24448ef4e50e81e3a79bb", size = 13226, upload-time = "2025-12-05T10:43:48.778Z" },
+]
+
+[[package]]
+name = "catppuccin"
+version = "2.5.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/b6/31/87c3ca25d29678e076e1f0d151ef8792f0557b26a8dc865035b5f1fa96c4/catppuccin-2.5.0.tar.gz", hash = "sha256:3035f3bf35bc2369d1cb4c754272a494708592a1e62d42655a371863ac7c6834", size = 1918017, upload-time = "2025-08-03T20:06:40.089Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c8/9c/7908f34009eec72884fe9448a62188423a3621f04ee58e2abaec379c9cc0/catppuccin-2.5.0-py3-none-any.whl", hash = "sha256:74a1f1db79d527905225f1afce1c8858d06e2dd1231e4300a72a812797cdb572", size = 19600, upload-time = "2025-08-03T20:06:38.912Z" },
 ]
 
 [[package]]
@@ -4043,6 +4060,20 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/88/27/0195d15fe7a897cbcba0904792c4b7c9fdd958456c3a17d2ea6093716a9a/ruff-0.15.11-py3-none-win32.whl", hash = "sha256:476a2aa56b7da0b73a3ee80b6b2f0e19cce544245479adde7baa65466664d5f3", size = 10655535, upload-time = "2026-04-16T18:46:12.47Z" },
     { url = "https://files.pythonhosted.org/packages/3a/5e/c927b325bd4c1d3620211a4b96f47864633199feed60fa936025ab27e090/ruff-0.15.11-py3-none-win_amd64.whl", hash = "sha256:8b6756d88d7e234fb0c98c91511aae3cd519d5e3ed271cae31b20f39cb2a12a3", size = 11779692, upload-time = "2026-04-16T18:46:17.268Z" },
     { url = "https://files.pythonhosted.org/packages/63/b6/aeadee5443e49baa2facd51131159fd6301cc4ccfc1541e4df7b021c37dd/ruff-0.15.11-py3-none-win_arm64.whl", hash = "sha256:063fed18cc1bbe0ee7393957284a6fe8b588c6a406a285af3ee3f46da2391ee4", size = 11032614, upload-time = "2026-04-16T18:46:34.487Z" },
+]
+
+[[package]]
+name = "seaborn"
+version = "0.13.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "matplotlib" },
+    { name = "numpy" },
+    { name = "pandas" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/86/59/a451d7420a77ab0b98f7affa3a1d78a313d2f7281a57afb1a34bae8ab412/seaborn-0.13.2.tar.gz", hash = "sha256:93e60a40988f4d65e9f4885df477e2fdaff6b73a9ded434c1ab356dd57eefff7", size = 1457696, upload-time = "2024-01-25T13:21:52.551Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/83/11/00d3c3dfc25ad54e731d91449895a79e4bf2384dc3ac01809010ba88f6d5/seaborn-0.13.2-py3-none-any.whl", hash = "sha256:636f8336facf092165e27924f223d3c62ca560b1f2bb5dff7ab7fad265361987", size = 294914, upload-time = "2024-01-25T13:21:49.598Z" },
 ]
 
 [[package]]

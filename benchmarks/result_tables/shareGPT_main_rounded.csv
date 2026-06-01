@@ -1,0 +1,13 @@
+Model,Prompt Type,Claude-Opus-4.7 Rating - high,Claude-Opus-4.7 Rating - low,Gemini-3.5-Flash Rating - high,Gemini-3.5-Flash Rating - low,GPT-5.5 Rating - high,GPT-5.5 Rating - low,AVG Rating - high,AVG Rating - low,AVG Rating - all
+Claude-Opus-4.7,Adamic NMT,8.507,8.662,9.426,9.623,8.209,8.417,8.714,8.9,8.756
+Claude-Opus-4.7,Adamic Self-Trans,8.729,8.814,9.6,9.583,8.369,8.515,8.899,8.971,8.915
+Claude-Opus-4.7,Native,8.769,8.706,9.528,9.569,8.366,8.485,8.888,8.92,8.895
+DeepSeek-V4-Pro,Adamic NMT,7.337,7.485,8.721,8.991,7.644,7.73,7.901,8.069,7.939
+DeepSeek-V4-Pro,Adamic Self-Trans,7.616,7.613,9.003,9.124,7.801,7.907,8.14,8.215,8.157
+DeepSeek-V4-Pro,Native,8.434,8.583,9.391,9.549,8.267,8.441,8.697,8.858,8.734
+GPT-OSS-120B,Adamic NMT,7.171,7.049,8.462,8.524,7.241,7.324,7.625,7.632,7.626
+GPT-OSS-120B,Adamic Self-Trans,7.499,7.539,8.613,9.006,7.672,7.779,7.928,8.108,7.969
+GPT-OSS-120B,Native,7.659,7.471,8.757,8.676,7.56,7.494,7.992,7.88,7.967
+Llama-4-Scout-17B,Adamic NMT,6.142,6.324,7.429,7.679,6.296,6.662,6.622,6.888,6.682
+Llama-4-Scout-17B,Adamic Self-Trans,5.856,5.76,7.091,7.262,6.127,6.338,6.358,6.453,6.38
+Llama-4-Scout-17B,Native,6.497,6.657,7.672,8.029,6.465,6.858,6.878,7.181,6.947

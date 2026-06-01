@@ -46,7 +46,7 @@ def get_args():
         "--prompt_type",
         type=str,
         default="direct",
-        choices=["direct", "google", "adamic"],
+        choices=["direct", "adamic", "adamic_self_trans"],
         help="prompt type",
     )
     parser.add_argument(
@@ -202,32 +202,6 @@ def inference(args):
         print("-" * 20)
 
         res1, completion_tokens, prompt_tokens = agent_base.respond(prompt)
-        if res1 is None or len(res1.strip()) == 0:
-            print(
-                "Warning: the response is empty, trying again with higher max_tokens..."
-            )
-            agent_base.reset()
-            agent_base.change_max_tokens(max_tokens * 2)
-            res1, completion_tokens, prompt_tokens = agent_base.respond(prompt)
-            if res1 is None or len(res1.strip()) == 0:
-                print(
-                    "Warning: the response is still empty after retrying with higher max_tokens, trying again with even higher max_tokens..."
-                )
-                agent_base.reset()
-                agent_base.change_max_tokens(max_tokens * 4)
-                res1, completion_tokens, prompt_tokens = agent_base.respond(prompt)
-                if res1 is None or len(res1.strip()) == 0:
-                    print(
-                        "Warning: the response is still empty after retrying with higher max_tokens, trying again with even higher max_tokens..."
-                    )
-                    agent_base.reset()
-                    agent_base.change_max_tokens(max_tokens * 8)
-                    res1, completion_tokens, prompt_tokens = agent_base.respond(prompt)
-                    if res1 is None or len(res1.strip()) == 0:
-                        print(
-                            "Error: the response is still empty after retrying with higher max_tokens for 4 times, saving empty string as response."
-                        )
-                        res1 = ""
 
         item["pred"] = clean_ans(args, res1)
         item["model"] = args.model
@@ -350,7 +324,7 @@ def main():
     )
     tasks = ["shareGPT"] if args.task_list == "all" else args.task_list.split(",")
     prompt_types = (
-        ["direct", "google", "adamic"]
+        ["direct", "adamic", "adamic_self_trans"]
         if args.prompt_type_list == "all"
         else args.prompt_type_list.split(",")
     )
@@ -360,7 +334,7 @@ def main():
         for prompt_type in prompt_types:
             args.task = task
             args.prompt_type = prompt_type
-            if prompt_type == "adamic":
+            if prompt_type == "adamic" or prompt_type == "adamic_self_trans":
                 args.model_type = "openai"
             langs = (
                 dic_list_langs[args.task]

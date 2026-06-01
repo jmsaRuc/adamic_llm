@@ -1,66 +1,40 @@
 {
-  "builder_name": "csv",
   "citation": "",
-  "config_name": "PT_BR",
-  "dataset_name": "mmmlu",
-  "dataset_size": 7524162,
   "description": "",
-  "download_checksums": {
-    "hf://datasets/openai/MMMLU@325a01dc3e173cac1578df94120499aaca2e2504/test/mmlu_PT-BR.csv": {
-      "num_bytes": 7211320,
-      "checksum": null
-    }
-  },
-  "download_size": 7211320,
   "features": {
     "Unnamed: 0": {
       "dtype": "int64",
       "_type": "Value"
     },
     "Question": {
-      "dtype": "string",
+      "dtype": "large_string",
       "_type": "Value"
     },
     "A": {
-      "dtype": "string",
+      "dtype": "large_string",
       "_type": "Value"
     },
     "B": {
-      "dtype": "string",
+      "dtype": "large_string",
       "_type": "Value"
     },
     "C": {
-      "dtype": "string",
+      "dtype": "large_string",
       "_type": "Value"
     },
     "D": {
-      "dtype": "string",
+      "dtype": "large_string",
       "_type": "Value"
     },
     "Answer": {
-      "dtype": "string",
+      "dtype": "large_string",
       "_type": "Value"
     },
     "Subject": {
-      "dtype": "string",
+      "dtype": "large_string",
       "_type": "Value"
     }
   },
   "homepage": "",
-  "license": "",
-  "size_in_bytes": 14735482,
-  "splits": {
-    "test": {
-      "name": "test",
-      "num_bytes": 7524162,
-      "num_examples": 14042,
-      "dataset_name": "mmmlu"
-    }
-  },
-  "version": {
-    "version_str": "0.0.0",
-    "major": 0,
-    "minor": 0,
-    "patch": 0
-  }
+  "license": ""
 }

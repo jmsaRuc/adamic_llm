@@ -6,10 +6,6 @@
       "dtype": "string",
       "_type": "Value"
     },
-    "subject": {
-      "dtype": "string",
-      "_type": "Value"
-    },
     "subject_category": {
       "dtype": "string",
       "_type": "Value"
@@ -68,6 +64,10 @@
     },
     "is_annotated": {
       "dtype": "bool",
+      "_type": "Value"
+    },
+    "subject": {
+      "dtype": "string",
       "_type": "Value"
     }
   },

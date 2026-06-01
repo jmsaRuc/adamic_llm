@@ -1,0 +1,21 @@
+Model,Prompt Type,fr,zh,es,vi,tr,AVG - high,AVG - low,AVG - all
+Claude-Opus-4.7,Adamic NMT,26.79,38.65,27.03,30.66,31.82,30.78,31.82,30.99
+Claude-Opus-4.7,Adamic Self-Trans,26.96,37.56,25.53,23.94,30.69,28.5,30.69,28.94
+Claude-Opus-4.7,English-Instruct,28.36,38.67,27.18,34.22,32.17,32.11,32.17,32.12
+Claude-Opus-4.7,Google-Trans,23.84,33.34,25.15,30.94,26.4,28.32,26.4,27.93
+Claude-Opus-4.7,Native-Instruct,27.96,40.12,26.62,24.41,31.75,29.78,31.75,30.17
+DeepSeek-V4-Pro,Adamic NMT,26.39,34.76,26.88,30.37,29.33,29.6,29.33,29.55
+DeepSeek-V4-Pro,Adamic Self-Trans,27.27,36.61,26.31,29.7,30.68,29.97,30.68,30.11
+DeepSeek-V4-Pro,English-Instruct,28.03,37.32,26.54,26.33,30.11,29.55,30.11,29.67
+DeepSeek-V4-Pro,Google-Trans,23.74,33.22,25.31,31.04,26.92,28.33,26.92,28.05
+DeepSeek-V4-Pro,Native-Instruct,26.51,35.93,25.85,30.99,29.83,29.82,29.83,29.82
+GPT-OSS-120B,Adamic NMT,17.34,28.55,22.6,26.55,23.04,23.76,23.04,23.62
+GPT-OSS-120B,Adamic Self-Trans,21.97,32.94,22.46,28.06,25.23,26.36,25.23,26.13
+GPT-OSS-120B,English-Instruct,22.33,33.06,23.04,29.94,25.22,27.09,25.22,26.72
+GPT-OSS-120B,Google-Trans,21.53,31.27,23.22,28.86,24.16,26.22,24.16,25.81
+GPT-OSS-120B,Native-Instruct,21.84,34.09,22.59,27.36,25.51,26.47,25.51,26.28
+Llama-4-Scout-17B,Adamic NMT,28.4,38.05,26.72,32.78,31.41,31.49,31.41,31.47
+Llama-4-Scout-17B,Adamic Self-Trans,28.04,37.85,27.01,33.59,31.91,31.62,31.91,31.68
+Llama-4-Scout-17B,English-Instruct,31.2,39.36,29.85,37.25,34.64,34.42,34.64,34.46
+Llama-4-Scout-17B,Google-Trans,26.39,37.05,27.54,33.45,29.25,31.11,29.25,30.74
+Llama-4-Scout-17B,Native-Instruct,31.19,39.47,29.3,35.16,34.12,33.78,34.12,33.85

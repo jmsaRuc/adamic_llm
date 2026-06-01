@@ -29,11 +29,11 @@ async def get_translation_google(
         The translated text.
         Returns original text if translation fails.
     """
-    contents_q = text["Question"]
-    contents_a = text["A"]
-    contents_b = text["B"]
-    contents_c = text["C"]
-    contents_d = text["D"]
+    contents_q = text["question"]
+    contents_a = text["option_a"]
+    contents_b = text["option_b"]
+    contents_c = text["option_c"]
+    contents_d = text["option_d"]
     try:
         parent = f"projects/{project_id}/locations/global"
         result = await translate_client.translate_text(
@@ -55,15 +55,15 @@ async def get_translation_google(
         ):
             for i, translation in enumerate(result.translations):
                 if i == 0:
-                    text["Question"] = translation.translated_text
+                    text["question"] = translation.translated_text
                 elif i == 1:
-                    text["A"] = translation.translated_text
+                    text["option_a"] = translation.translated_text
                 elif i == 2:
-                    text["B"] = translation.translated_text
+                    text["option_b"] = translation.translated_text
                 elif i == 3:
-                    text["C"] = translation.translated_text
+                    text["option_c"] = translation.translated_text
                 elif i == 4:
-                    text["D"] = translation.translated_text
+                    text["option_d"] = translation.translated_text
             return text
         else:
             print("Warning: Unexpected translation result format.")

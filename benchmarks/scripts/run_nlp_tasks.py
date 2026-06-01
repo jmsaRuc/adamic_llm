@@ -55,11 +55,9 @@ def get_args():
         choices=[
             "direct",
             "direct_native",
-            "native_cot",
-            "en_cot",
-            "google",
-            "nllb",
-            "xlt",
+            "google_direct",
+            "adamic",
+            "adamic_self_trans"
         ],
         help="prompt type",
     )
@@ -86,7 +84,7 @@ def get_args():
         "--prompt_type_list",
         type=str,
         default="all",
-        help="""list of prompt types, choices = ['direct',"direct_native","native_cot","xlt",'en_cot','google','nllb', "self_trans"] """,
+        help="""list of prompt types, choices = ['direct',"direct_native","google_direct","adamic","adamic_self_trans"] """,
     )
     parser.add_argument(
         "--lang_list", type=str, default="all", help="list of languages"
@@ -337,7 +335,7 @@ def main():
         else args.task_list.split(",")
     )
     prompt_types = (
-        ["direct", "direct_native", "google_direct", "adamic"]
+        ["direct", "direct_native", "google_direct", "adamic", "adamic_self_trans"]
         if args.prompt_type_list == "all"
         else args.prompt_type_list.split(",")
     )
@@ -347,7 +345,7 @@ def main():
         for prompt_type in prompt_types:
             args.task = task
             args.prompt_type = prompt_type
-            if prompt_type == "adamic":
+            if prompt_type in ["adamic", "adamic_self_trans"]:
                 args.model_type = "openai"
             langs = (
                 dic_list_langs[args.task]

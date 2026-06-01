@@ -1,0 +1,40 @@
+{
+  "citation": "",
+  "description": "",
+  "features": {
+    "Unnamed: 0": {
+      "dtype": "int64",
+      "_type": "Value"
+    },
+    "Question": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "A": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "B": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "C": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "D": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "Answer": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "Subject": {
+      "dtype": "string",
+      "_type": "Value"
+    }
+  },
+  "homepage": "",
+  "license": ""
+}

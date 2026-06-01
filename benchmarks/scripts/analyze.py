@@ -2,7 +2,38 @@ import pandas as pd
 import os
 
 dic_list_langs = {
-    "mgsm": ["en", "de", "ru", "fr", "zh", "es", "ja", "sw", "th", "bn", "te"],
+    "global_mmlu": [
+        "de",
+        "en",
+        "fa",
+        "fr",
+        "he",
+        "ja",
+        "ne",
+        "pl",
+        "si",
+        "sn",
+        "so",
+        "sr",
+        "sv",
+        "yo",
+    ],
+    "mmmlu": [
+        "ar",
+        "bn",
+        "de",
+        "es",
+        "fr",
+        "hi",
+        "id",
+        "it",
+        "ja",
+        "ko",
+        "pt",
+        "sw",
+        "yo",
+        "zh_cn",
+    ],
     "xcopa": ["zh", "it", "vi", "tr", "id", "sw", "th", "et", "ta", "ht", "qu"],
     "xnli": [
         "en",
@@ -66,13 +97,9 @@ def process_file(task):
         categories=[
             "direct_native",
             "direct",
-            "native_cot",
-            "en_cot",
-            "xlt",
             "google",
             "google_direct",
-            "nllb",
-            "self_trans",
+            "adamic",
         ],
         ordered=True,
     )
@@ -92,7 +119,7 @@ def process_file(task):
     df.to_csv(f"accuracy_processed/accuracy_{task}_pivot.csv")
 
 
-for task in ["mgsm", "xcopa", "xnli", "paws-x", "xlsum", "mkqa", "shareGPT"]:
+for task in ["global_mmlu", "mmmlu", "xcopa", "xnli", "paws-x", "xlsum", "mkqa", "shareGPT"]:
     # check whether file exists
     if os.path.isfile(f"accuracy_{task}.csv"):
         process_file(task)

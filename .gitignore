@@ -81,9 +81,9 @@ target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
-!notebooks/.keep
-notebooks/*.ipynb
-*.ipynb
+!notebooks/test/.keep
+notebooks/test/*.ipynb
+
 
 # IPython
 profile_default/
@@ -158,3 +158,5 @@ benchmarks/results
 benchmarks/results/*
 benchmarks/results2
 benchmarks/results2/*
+benchmarks/results-main
+benchmarks/results-main/*

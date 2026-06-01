@@ -17,6 +17,7 @@ services:
       ADAMIC_LLM_DB_USER: adamic_llm
       ADAMIC_LLM_DB_PASS: adamic_llm
       ADAMIC_LLM_DB_BASE: adamic_llm
+      ADAMIC_LLM_RELOAD: ${ADAMIC_LLM_RELOAD:-False}
       ADAMIC_LLM_REDIS_HOST: adamic_llm-redis
       ADAMIC_LLM_LLM_PROVIDER: ${ADAMIC_LLM_LLM_PROVIDER}
       ADAMIC_LLM_GROQ_API_KEY: ${ADAMIC_LLM_GROQ_API_KEY}
@@ -30,7 +31,7 @@ services:
       LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
       LANGFUSE_HOST: ${LANGFUSE_HOST}
     volumes:
-      - /home/jens/.config/gcloud/application_default_credentials.json:/app/application_default_credentials.json:ro
+      - /home/jens/.config/gcloud/application_default_credentials.json:/app/application_default_credentials.json
 
   db:
     image: postgres:18.1-bookworm

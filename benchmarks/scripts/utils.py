@@ -16,15 +16,17 @@ from dotenv import load_dotenv
 load_dotenv("benchmark.env")
 
 
-client = OpenAI(
+client_openai = OpenAI(
     base_url=os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1"),
     api_key=os.getenv("OPENAI_API_KEY"),
 )
 
-client_groq = groq.Groq()
+client_groq = groq.Groq(timeout=120, max_retries=5)
 
-client_openrouter = OpenRouter(
+client_openrouter = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
     api_key=os.getenv("OPENROUTER_API_KEY"),
+    timeout=240,
 )
 
 
@@ -38,7 +40,7 @@ def before_retry_fn(retry_state):
 
 @retry(
     wait=wait_fixed(5) + wait_random(0, 5),
-    stop=stop_after_attempt(1),
+    stop=stop_after_attempt(3),
     before=before_retry_fn,
 )
 def groq_completion_with_backoff(**kwargs):
@@ -57,20 +59,20 @@ def groq_completion_with_backoff(**kwargs):
 
 @retry(
     wait=wait_fixed(5) + wait_random(0, 5),
-    stop=stop_after_attempt(1),
+    stop=stop_after_attempt(3),
     before=before_retry_fn,
 )
 def openrouter_completion_with_backoff(**kwargs):
-    return client_openrouter.chat.send(**kwargs)
+    return client_openrouter.chat.completions.create(**kwargs)
 
 
 @retry(
     wait=wait_fixed(5) + wait_random(0, 5),
-    stop=stop_after_attempt(6),
+    stop=stop_after_attempt(3),
     before=before_retry_fn,
 )
 def completion_with_backoff(**kwargs):
-    return client.chat.completions.create(**kwargs)
+    return client_openai.chat.completions.create(**kwargs)
 
 
 def get_completion_messages(
@@ -89,6 +91,7 @@ def get_completion_messages(
             messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
+            stream=False,
         )
         name = (
             response.choices[0].message.name
@@ -150,7 +153,9 @@ def get_completion_messages(
             messages=messages,
             temperature=temperature,
             max_completion_tokens=max_tokens,
-            reasoning={"effort": "xhigh"},
+            stream=False,
+            verbosity=None if "deepseek" in model else "xhigh",
+            extra_body={"thinking": {"type": "enabled"}, "reasoning": {"effort": "high"}} if "deepseek" in model else {"reasoning": {"enabled": True}},
         )
         name = (
             response.choices[0].message.name
@@ -276,7 +281,10 @@ def query_openrouter_model(
             n=1,
             stop=None,
             temperature=temperature,
-            reasoning_effort="xhigh",
+            reasoning_effort="high" if "claude" not in model else None,
+            extra_body={"reasoning": {"enabled": True}},
+            verbosity="xhigh" if "claude" in model else None,
+            stream=False,
         )
         output = completions.choices[0].message.content.strip()
         completion_tokens = completions.usage.completion_tokens
