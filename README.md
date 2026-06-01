@@ -1,6 +1,8 @@
 # adamic_llm
 
-This project was generated using fastapi_template.
+This project was made as part of the study: Is Translation Context All You Need?
+Improving Large Language Models Multilingual
+Capability with Adamic Prompting
 
 ## UV
 
@@ -48,20 +50,164 @@ docker-compose build
 ```bash
 $ tree "adamic_llm"
 adamic_llm
-├── conftest.py  # Fixtures for all tests.
-├── db  # module contains db configurations
-│   ├── dao  # Data Access Objects. Contains different classes to interact with database.
-│   └── models  # Package contains different models for ORMs.
-├── __main__.py  # Startup script. Starts uvicorn.
-├── services  # Package for different external services such as rabbit or redis etc.
-├── settings.py  # Main configuration settings for project.
-├── static  # Static content.
-├── tests  # Tests for project.
-└── web  # Package contains web server. Handlers, startup config.
-    ├── api  # Package with all handlers.
-    │   └── router.py  # Main router.
-    ├── application.py  # FastAPI application configuration.
-    └── lifespan.py  # Contains actions to perform on startup and shutdown.
+├── db
+│   ├── dao
+│   │   ├── dummy_dao.py
+│   │   └── __pycache__
+│   │       └── dummy_dao.cpython-313.pyc
+│   ├── dependencies.py
+│   ├── models
+│   │   ├── dummy_model.py
+│   │   └── __pycache__
+│   │       └── dummy_model.cpython-313.pyc
+│   └── __pycache__
+│       └── dependencies.cpython-313.pyc
+├── gunicorn_runner.py
+├── __init__.py
+├── log.py
+├── __main__.py
+├── __pycache__
+│   ├── gunicorn_runner.cpython-313.pyc
+│   ├── __init__.cpython-313.pyc
+│   ├── log.cpython-313.pyc
+│   ├── __main__.cpython-313.pyc
+│   └── settings.cpython-313.pyc
+├── services
+│   ├── adamic_prompting
+│   │   ├── adamic_history.py
+│   │   ├── configuration.py
+│   │   ├── graph.py
+│   │   ├── __init__.py
+│   │   ├── prompts.py
+│   │   ├── __pycache__
+│   │   │   ├── adamic_history.cpython-313.pyc
+│   │   │   ├── configuration.cpython-313.pyc
+│   │   │   ├── graph.cpython-313.pyc
+│   │   │   ├── __init__.cpython-313.pyc
+│   │   │   ├── prompts.cpython-313.pyc
+│   │   │   ├── state.cpython-313.pyc
+│   │   │   └── utils.cpython-313.pyc
+│   │   ├── state.py
+│   │   └── utils.py
+│   ├── chat
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-313.pyc
+│   │   │   └── service.cpython-313.pyc
+│   │   └── service.py
+│   ├── google_translate
+│   │   ├── dependency.py
+│   │   ├── __init__.py
+│   │   ├── lifespan.py
+│   │   └── __pycache__
+│   │       ├── dependency.cpython-313.pyc
+│   │       ├── __init__.cpython-313.pyc
+│   │       └── lifespan.cpython-313.pyc
+│   ├── graph
+│   │   ├── graph_registry.py
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── graph_registry.cpython-313.pyc
+│   │   │   ├── __init__.cpython-313.pyc
+│   │   │   └── runner.cpython-313.pyc
+│   │   └── runner.py
+│   ├── __init__.py
+│   ├── models
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-313.pyc
+│   │   │   └── service.cpython-313.pyc
+│   │   └── service.py
+│   ├── __pycache__
+│   │   └── __init__.cpython-313.pyc
+│   └── redis
+│       ├── dependency.py
+│       ├── __init__.py
+│       ├── lifespan.py
+│       └── __pycache__
+│           ├── dependency.cpython-313.pyc
+│           ├── __init__.cpython-313.pyc
+│           └── lifespan.cpython-313.pyc
+├── settings.py
+├── static
+│   └── docs
+│       ├── redoc.standalone.js
+│       ├── swagger-ui-bundle.js
+│       └── swagger-ui.css
+├── utils
+│   ├── __init__.py
+│   ├── message.py
+│   └── __pycache__
+│       ├── __init__.cpython-313.pyc
+│       └── message.cpython-313.pyc
+└── web
+    ├── api
+    │   ├── chat
+    │   │   ├── __init__.py
+    │   │   ├── __pycache__
+    │   │   │   ├── __init__.cpython-313.pyc
+    │   │   │   ├── schema.cpython-313.pyc
+    │   │   │   └── views.cpython-313.pyc
+    │   │   ├── schema.py
+    │   │   └── views.py
+    │   ├── docs
+    │   │   ├── __init__.py
+    │   │   ├── __pycache__
+    │   │   │   ├── __init__.cpython-313.pyc
+    │   │   │   └── views.cpython-313.pyc
+    │   │   └── views.py
+    │   ├── dummy
+    │   │   ├── __init__.py
+    │   │   ├── __pycache__
+    │   │   │   ├── __init__.cpython-313.pyc
+    │   │   │   ├── schema.cpython-313.pyc
+    │   │   │   └── views.cpython-313.pyc
+    │   │   ├── schema.py
+    │   │   └── views.py
+    │   ├── echo
+    │   │   ├── __init__.py
+    │   │   ├── __pycache__
+    │   │   │   ├── __init__.cpython-313.pyc
+    │   │   │   ├── schema.cpython-313.pyc
+    │   │   │   └── views.cpython-313.pyc
+    │   │   ├── schema.py
+    │   │   └── views.py
+    │   ├── __init__.py
+    │   ├── models
+    │   │   ├── __init__.py
+    │   │   ├── __pycache__
+    │   │   │   ├── __init__.cpython-313.pyc
+    │   │   │   ├── schemas.cpython-313.pyc
+    │   │   │   └── views.cpython-313.pyc
+    │   │   ├── schemas.py
+    │   │   └── views.py
+    │   ├── monitoring
+    │   │   ├── __init__.py
+    │   │   ├── __pycache__
+    │   │   │   ├── __init__.cpython-313.pyc
+    │   │   │   └── views.cpython-313.pyc
+    │   │   └── views.py
+    │   ├── __pycache__
+    │   │   ├── __init__.cpython-313.pyc
+    │   │   └── router.cpython-313.pyc
+    │   ├── redis
+    │   │   ├── __init__.py
+    │   │   ├── __pycache__
+    │   │   │   ├── __init__.cpython-313.pyc
+    │   │   │   ├── schema.cpython-313.pyc
+    │   │   │   └── views.cpython-313.pyc
+    │   │   ├── schema.py
+    │   │   └── views.py
+    │   └── router.py
+    ├── application.py
+    ├── __init__.py
+    ├── lifespan.py
+    ├── openai_server.py
+    └── __pycache__
+        ├── application.cpython-313.pyc
+        ├── __init__.cpython-313.pyc
+        ├── lifespan.cpython-313.pyc
+        └── openai_server.cpython-313.pyc
 ```
 
 ## Configuration
